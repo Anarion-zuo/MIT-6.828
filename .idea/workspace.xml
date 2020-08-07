@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="6031a3b9-e268-4f63-baa7-b94be5ec20de" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MakefileLocalSettings">
+    <option name="availableProjects">
+      <map>
+        <entry>
+          <key>
+            <ExternalProjectPojo>
+              <option name="name" value="6.828lab" />
+              <option name="path" value="$PROJECT_DIR$" />
+            </ExternalProjectPojo>
+          </key>
+          <value>
+            <list>
+              <ExternalProjectPojo>
+                <option name="name" value="6.828lab" />
+                <option name="path" value="$PROJECT_DIR$" />
+              </ExternalProjectPojo>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="projectSyncType">
+      <map>
+        <entry key="$PROJECT_DIR$" value="RE_IMPORT" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectId" id="1fXmSQVtGzFPjDkQrr9lh6MKlpx" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.first.check.clang-format" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="nodejs.protractor.protractor_package" value="" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="restartRequiresConfirmation" value="false" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+  </component>
+  <component name="RunManager">
+    <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+      <makefile filename="$PROJECT_DIR$/GNUmakefile" target="all" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
+    <configuration name="clean" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+      <makefile filename="$PROJECT_DIR$/GNUmakefile" target="clean" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
+    <configuration name="gdb" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+      <makefile filename="$PROJECT_DIR$/GNUmakefile" target="gdb" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
+    <configuration name="qemu-nox-gdb" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+      <makefile filename="$PROJECT_DIR$/GNUmakefile" target="qemu-nox-gdb" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
+    <configuration name="qemu-nox" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+      <makefile filename="$PROJECT_DIR$/GNUmakefile" target="qemu-nox" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Makefile.all" />
+      <item itemvalue="Makefile.qemu-nox-gdb" />
+      <item itemvalue="Makefile.gdb" />
+      <item itemvalue="Makefile.qemu-nox" />
+      <item itemvalue="Makefile.clean" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Makefile.all" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6031a3b9-e268-4f63-baa7-b94be5ec20de" name="Default Changelist" comment="" />
+      <created>1596372815971</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1596372815971</updated>
+      <workItem from="1596372818447" duration="18932000" />
+      <workItem from="1596444798935" duration="12387000" />
+      <workItem from="1596544205952" duration="44932000" />
+      <workItem from="1596812291209" duration="346000" />
+    </task>
+    <task id="LOCAL-00001" summary="lab1 complete">
+      <created>1596812360758</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1596812360758</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="lab1 complete" />
+    <option name="LAST_COMMIT_MESSAGE" value="lab1 complete" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="269" y="199" width="933" height="659" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1596619314549">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="269" y="199" width="933" height="659" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.24.1920.1056@0.24.1920.1056" timestamp="1596619314549" />
+    <state x="768" y="380" width="526" height="400" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1596635622770">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="768" y="380" width="526" height="400" key="#com.intellij.fileTypes.FileTypeChooser/0.24.1920.1056@0.24.1920.1056" timestamp="1596635622770" />
+    <state x="694" y="302" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1596390174166">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="694" y="302" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.24.1920.1056@0.24.1920.1056" timestamp="1596390174166" />
+    <state x="1151" y="230" width="482" height="517" key="#xdebugger.evaluate" timestamp="1596638561813">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="1151" y="230" width="482" height="517" key="#xdebugger.evaluate/0.24.1920.1056@0.24.1920.1056" timestamp="1596638561813" />
+    <state x="633" y="80" key="CommitChangelistDialog2" timestamp="1596812360465">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="633" y="80" key="CommitChangelistDialog2/0.24.1920.1056@0.24.1920.1056" timestamp="1596812360465" />
+    <state x="602" y="334" key="FileChooserDialogImpl" timestamp="1596382867884">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="602" y="334" key="FileChooserDialogImpl/0.24.1920.1056@0.24.1920.1056" timestamp="1596382867884" />
+    <state width="1324" height="314" key="GridCell.Tab.0.bottom" timestamp="1596812492068">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state width="1324" height="314" key="GridCell.Tab.0.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1596812492068" />
+    <state width="1324" height="314" key="GridCell.Tab.0.center" timestamp="1596812492065">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state width="1324" height="314" key="GridCell.Tab.0.center/0.24.1920.1056@0.24.1920.1056" timestamp="1596812492065" />
+    <state width="1324" height="314" key="GridCell.Tab.0.left" timestamp="1596812492063">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state width="1324" height="314" key="GridCell.Tab.0.left/0.24.1920.1056@0.24.1920.1056" timestamp="1596812492063" />
+    <state width="1324" height="314" key="GridCell.Tab.0.right" timestamp="1596812492066">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state width="1324" height="314" key="GridCell.Tab.0.right/0.24.1920.1056@0.24.1920.1056" timestamp="1596812492066" />
+    <state width="1324" height="289" key="GridCell.Tab.1.bottom" timestamp="1596812309075">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state width="1324" height="289" key="GridCell.Tab.1.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1596812309075" />
+    <state width="1324" height="289" key="GridCell.Tab.1.center" timestamp="1596812309075">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state width="1324" height="289" key="GridCell.Tab.1.center/0.24.1920.1056@0.24.1920.1056" timestamp="1596812309075" />
+    <state width="1324" height="289" key="GridCell.Tab.1.left" timestamp="1596812309075">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state width="1324" height="289" key="GridCell.Tab.1.left/0.24.1920.1056@0.24.1920.1056" timestamp="1596812309075" />
+    <state width="1324" height="289" key="GridCell.Tab.1.right" timestamp="1596812309075">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state width="1324" height="289" key="GridCell.Tab.1.right/0.24.1920.1056@0.24.1920.1056" timestamp="1596812309075" />
+    <state x="245" y="208" key="SettingsEditor" timestamp="1596544165189">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="245" y="208" key="SettingsEditor/0.24.1920.1056@0.24.1920.1056" timestamp="1596544165189" />
+    <state x="634" y="270" key="Vcs.Push.Dialog.v2" timestamp="1596812482606">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="634" y="270" key="Vcs.Push.Dialog.v2/0.24.1920.1056@0.24.1920.1056" timestamp="1596812482606" />
+    <state x="886" y="274" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1596545511154">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="886" y="274" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.24.1920.1056@0.24.1920.1056" timestamp="1596545511154" />
+    <state x="822" y="434" key="git4idea.remote.GitConfigureRemotesDialog" timestamp="1596812635049">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="822" y="434" key="git4idea.remote.GitConfigureRemotesDialog/0.24.1920.1056@0.24.1920.1056" timestamp="1596812635049" />
+    <state x="472" y="455" width="694" height="214" key="makefile.clean.confirm.dialog" timestamp="1596812297413">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="472" y="455" width="694" height="214" key="makefile.clean.confirm.dialog/0.24.1920.1056@0.24.1920.1056" timestamp="1596812297413" />
+    <state x="876" y="249" width="672" height="677" key="run.anything.popup" timestamp="1596618279210">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="876" y="249" width="672" height="677" key="run.anything.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1596618279210" />
+    <state x="879" y="253" width="672" height="678" key="search.everywhere.popup" timestamp="1596632191000">
+      <screen x="0" y="24" width="1920" height="1056" />
+    </state>
+    <state x="879" y="253" width="672" height="678" key="search.everywhere.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1596632191000" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/boot/main.c</url>
+          <line>59</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/kern/entry.S</url>
+          <line>42</line>
+          <option name="timeStamp" value="18" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/kern/entry.S</url>
+          <line>30</line>
+          <option name="timeStamp" value="19" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/lib/printfmt.c</url>
+          <line>169</line>
+          <option name="timeStamp" value="23" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
