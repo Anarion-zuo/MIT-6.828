@@ -95,6 +95,7 @@ boot_alloc(uint32_t n)
 	if (!nextfree) {
 		extern char end[];
 		nextfree = ROUNDUP((char *) end, PGSIZE);
+		cprintf("end:  0x%lx\n", end);
 	}
 
 	// Allocate a chunk large enough to hold 'n' bytes, then update
@@ -103,7 +104,25 @@ boot_alloc(uint32_t n)
 	//
 	// LAB 2: Your code here.
 
-	return NULL;
+	// special case according to notes
+	if (n == 0) {
+	    return nextfree;
+	}
+
+	// cprintf("UTOP: 0x%lx\nULIM: 0x%lx\nnext: 0x%lx\nnphy: 0x%lx", UTOP, ULIM, nextfree, PADDR(nextfree));
+
+	// note before update
+	result = nextfree;
+	nextfree = ROUNDUP(n, PGSIZE) + nextfree;
+
+	// out of memory panic
+	if (nextfree > (char *)0xf0400000) {
+	    panic("boot_alloc out of memory, nothing changed, returning NULL...\n");
+	    nextfree = result;    // reset static data
+	    return NULL;
+	}
+
+	return result;
 }
 
 // Set up a two-level page table:
@@ -125,7 +144,7 @@ mem_init(void)
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
+	// panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -149,6 +168,8 @@ mem_init(void)
 	// to initialize all fields of each struct PageInfo to 0.
 	// Your code goes here:
 
+	pages = boot_alloc(npages * sizeof(struct PageInfo));
+	memset(pages, 0, sizeof(struct PageInfo) * npages);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -231,6 +252,27 @@ mem_init(void)
 // allocator functions below to allocate and deallocate physical
 // memory via the page_free_list.
 //
+/*
+ * Kernel Page Map:
+ *                     .                              .
+ *                     .       Managable Space        .
+ *                     .                              .
+pages ends 0x158000 -->+------------------------------+
+ *                     |                              |
+ *                     .                              .
+ *                     .   pages management array     .
+ *                     .                              .
+ *                     |                              |
+ *  pages 0x118000 ->  +------------------------------+
+ *                     |        Kernel is here        |
+ *    EXT 0x100000 ->  +------------------------------+
+ *                     |                              |
+ *                     |          IO Hole             |
+ *                     |                              |
+ * BASEMEM 0xa0000 ->  +------------------------------+
+ *                     |    Basic Managable Space     |
+ *    KERNBASE ----->  +------------------------------+
+ */
 void
 page_init(void)
 {
@@ -251,12 +293,59 @@ page_init(void)
 	// Change the code to reflect this.
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
-	size_t i;
-	for (i = 0; i < npages; i++) {
-		pages[i].pp_ref = 0;
+//    cprintf("pages addr: %lx\n", pages);
+	// Don't mark reference count!
+	pages[0].pp_ref = 0;
+    pages[0].pp_link = NULL;
+    page_free_list = &pages[0];
+    // do base memory
+    size_t i = 1;
+    for (; i < npages_basemem; i++) {
+		pages[i].pp_ref = 0;  // Don't mark reference count!
+		// connect the previous page
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
+//	cprintf("npages_basemen: %d, first end addr: 0x%lx\n", npages_basemem, &pages[i]);
+//    cprintf("end of basemem: 0x%lx\n", npages_basemem * 4096);
+	// extended
+
+	// between EXT and pages
+//    i = EXTPHYSMEM / PGSIZE;
+//    for (; (void *)pages > page2kva(&pages[i + 1]); ++i) {
+//        pages[i].pp_ref = 0;  // Don't mark reference count!
+//        // connect the previous page
+//        pages[i].pp_link = page_free_list;
+//        page_free_list = &pages[i];
+//    }
+	// after pages
+	i = PADDR(boot_alloc(0)) / PGSIZE;
+//	cprintf("next beginning: %d, second begin addr: %lx\n", i, &pages[i]);
+	for (; i < npages; ++i) {
+        pages[i].pp_ref = 0;  // Don't mark reference count!
+        // connect the previous page
+        pages[i].pp_link = page_free_list;
+        page_free_list = &pages[i];
+	}
+//	cprintf("npages: %d, end - pages: %lu, pages ends: %lx\n", npages, &pages[npages] - pages, &pages[npages]);
+	// the 0-indexed page must exists
+	if (npages > 0) {
+	    // first page marked used
+	    pages[1].pp_link = NULL;
+	}
+
+	// extended memory
+
+
+//	struct PageInfo *node = page_free_list;
+//	while (node) {
+//	    cprintf("init addr: 0x%lx\n", node);
+//	    node = node->pp_link;
+//	}
+
+//	struct PageInfo *info = page_alloc(0);
+//	cprintf("info: 0x%lx\npage: 0x%lx", info, page2kva(info));
+
 }
 
 //
@@ -275,7 +364,23 @@ struct PageInfo *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
-	return 0;
+	// Here begins my code
+
+	// out of memory
+	if (page_free_list == NULL) {
+	    // no changes made so far of course
+	    return NULL;
+	}
+	struct PageInfo *target = page_free_list;
+	page_free_list = page_free_list->pp_link;     // update free list pointer
+    target->pp_link = NULL;                       // set to NULL according to notes
+	char *space_head = page2kva(target);          // extract kernel virtual memory
+	if (alloc_flags & ALLOC_ZERO) {
+        // zero the page according to flags
+        memset(space_head, 0, PGSIZE);
+	}
+
+	return target;
 }
 
 //
@@ -288,6 +393,11 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
+	if (pp->pp_ref != 0 || pp->pp_link != NULL) {
+	    panic("Page double free or freeing a referenced page...\n");
+	}
+	pp->pp_link = page_free_list;
+	page_free_list = pp;
 }
 
 //
@@ -466,11 +576,13 @@ check_page_free_list(bool only_low_memory)
 
 	// if there's a page that shouldn't be on the free list,
 	// try to make sure it eventually causes trouble.
-	for (pp = page_free_list; pp; pp = pp->pp_link)
-		if (PDX(page2pa(pp)) < pdx_limit)
-			memset(page2kva(pp), 0x97, 128);
-
+	for (pp = page_free_list; pp; pp = pp->pp_link) {
+        if (PDX(page2pa(pp)) < pdx_limit) {
+            memset(page2kva(pp), 0x97, 128);
+        }
+    }
 	first_free_page = (char *) boot_alloc(0);
+	struct PageInfo *last = NULL, *this = NULL; size_t diff = 0;
 	for (pp = page_free_list; pp; pp = pp->pp_link) {
 		// check that we didn't corrupt the free list itself
 		assert(pp >= pages);
@@ -484,6 +596,15 @@ check_page_free_list(bool only_low_memory)
 		assert(page2pa(pp) != EXTPHYSMEM);
 		assert(page2pa(pp) < EXTPHYSMEM || (char *) page2kva(pp) >= first_free_page);
 
+		last = this;
+		this = pp;
+		size_t this_diff = last - this;
+		if (this_diff != diff) {
+		    diff = this_diff;
+		    cprintf("new diff: %lu 0x%lx, last: 0x%lx, this: 0x%lx\n", diff, diff, last, this);
+		}
+//		cprintf("list addr: 0x%lx\n", pp);
+
 		if (page2pa(pp) < EXTPHYSMEM)
 			++nfree_basemem;
 		else
@@ -493,7 +614,7 @@ check_page_free_list(bool only_low_memory)
 	assert(nfree_basemem > 0);
 	assert(nfree_extmem > 0);
 
-	cprintf("check_page_free_list() succeeded!\n");
+//	cprintf("check_page_free_list() succeeded!\n");
 }
 
 //
