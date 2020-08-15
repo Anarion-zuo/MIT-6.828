@@ -95,7 +95,7 @@ boot_alloc(uint32_t n)
 	if (!nextfree) {
 		extern char end[];
 		nextfree = ROUNDUP((char *) end, PGSIZE);
-		cprintf("end:  0x%lx\n", end);
+//		cprintf("end:  0x%lx\n", end);
 	}
 
 	// Allocate a chunk large enough to hold 'n' bytes, then update
@@ -193,6 +193,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
+    boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -205,6 +206,8 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
+    boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
+//    boot_map_region(kern_pgdir, KSTACKTOP - PTSIZE, PTSIZE - KSTKSIZE, PADDR(bootstack) + KSTKSIZE, 0);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -214,6 +217,8 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+//    boot_map_region(kern_pgdir, KERNBASE, npages * PGSIZE, 0, PTE_W);
+    boot_map_region(kern_pgdir, KERNBASE, 0x100000000 - KERNBASE, 0, PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -433,11 +438,79 @@ page_decref(struct PageInfo* pp)
 // Hint 3: look at inc/mmu.h for useful macros that manipulate page
 // table and page directory entries.
 //
+static struct PageInfo *create_pgtbl(pde_t *pde) {
+    struct PageInfo *pageInfo;
+    // must create new
+    pageInfo = page_alloc(ALLOC_ZERO);
+    if (pageInfo == NULL) {
+        // allocation failed
+        return NULL;
+    }
+    // must increment reference according to notes
+    pageInfo->pp_ref += 1;
+    // update page directory
+    // set upper address field
+    // here it must be physical address, not virtual address
+    *pde = page2pa(pageInfo);
+    /*
+     * Notes:
+     * The page frame address specifies the physical starting address of a page.
+     */
+    // set present bit and permission
+    *pde |= PTE_U | PTE_P | PTE_W;
+    return pageInfo;
+}
+
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	return NULL;
+	/*
+	 * Indexes
+	 * A virtual address is composed of indices into tables.
+	 * A table is an array of information.
+	 * With the indices in the virtual address, the page directory and table is found.
+	 */
+	// index in page directory
+	uintptr_t pdx = PDX(va);
+    // index in page table
+    uintptr_t ptx = PTX(va);
+    // offset in page frame
+    uintptr_t pgoff = PGOFF(va);
+
+    /*
+     * The indices are obtained.
+     * I now use the indices to index the tables.
+     */
+    // indexing page directory
+    pde_t *pde = &kern_pgdir[pdx];
+
+    /*
+     * The page table information is obtained.
+     * I now check whether the page table exists.
+     * Page table is, by itself, a page.
+     * If the page of the page table does not exist, it must be allocated.
+     */
+    if (!*pde & PTE_P) {
+        // page table does not exist
+        if (create) {
+            // allocate new page
+            // page directory entry is set up by this function
+            struct PageInfo *pageInfo = create_pgtbl(pde);
+            if (pageInfo == NULL) {
+                // allocation failed
+                return NULL;
+            }
+        } else {
+            return NULL;
+        }
+        // pte info is setup in crea_pgtbl
+    }
+    // fetching page table head
+    pte_t *pgtbl = (pte_t *)KADDR(PTE_ADDR(*pde));
+    // indexing page table
+    pte_t *pte = &pgtbl[ptx];
+	return pte;
 }
 
 //
@@ -455,6 +528,20 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+    // might be mapping multiple pages, must set them all up
+    uintptr_t oldva = va;
+    /*
+     * Must call pgdir_walk each time,
+     * for the va's may not be mapped by the same page table.
+     */
+    for (; va - oldva < size; va += PGSIZE, pa += PGSIZE) {
+        // find page table entry
+        // create if not exists
+        pte_t *pte = pgdir_walk(pgdir, (void *)va, 1);
+        // set up entry
+        *pte = pa | perm | PTE_P;
+    }
+
 }
 
 //
@@ -486,6 +573,36 @@ int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
 	// Fill this function in
+	pte_t *pte = pgdir_walk(pgdir, va, 1);
+	if (pte == NULL) {
+	    // allocation failed
+	    return -E_NO_MEM;
+	}
+	if (*pte & PTE_P) {
+	    // page already mapped
+	    /*
+	    if (PTE_ADDR(*pte) == page2pa(pp)) {
+	        // remapped to same page, do nothing
+	        // don't know how to be elegant...
+	        return 0;
+	    }
+	     */
+	    if (PTE_ADDR(*pte) != page2pa(pp)) {
+	        // remove page only when not remapped
+            page_remove(pgdir, va);
+        }
+	}
+	/*
+	 * Even if the page is remapped to the same address, there won't be any bugs.
+	 * The permission fields must be reset by the function, as it is the purpose of this function.
+	 * The anotated code above tries a naive, unelegant approach, which may lead to subtle bugs of incompleteness of the function.
+	 */
+	if (PTE_ADDR(*pte) != page2pa(pp)) {
+	    ++pp->pp_ref;
+	}
+	*pte = page2pa(pp) | perm | PTE_P;
+	// must increment reference count
+	// another reason for the elegant implementation
 	return 0;
 }
 
@@ -504,7 +621,16 @@ struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	return NULL;
+	pte_t *pte = pgdir_walk(pgdir, va, 0);
+	if (pte == NULL) {
+	    // no page mapped at va
+	    return NULL;
+	}
+	if (pte_store) {
+	    *pte_store = pte;
+	}
+    struct PageInfo *pageInfo = pa2page(PTE_ADDR(*pte));
+	return pageInfo;
 }
 
 //
@@ -526,6 +652,16 @@ void
 page_remove(pde_t *pgdir, void *va)
 {
 	// Fill this function in
+	pte_t *pte;
+	struct PageInfo *pageInfo = page_lookup(pgdir, va, &pte);
+	if (pageInfo == NULL) {
+	    // page not mapped
+	    return;
+	}
+	page_decref(pageInfo);
+	// set pte not present
+	*pte = 0;
+	tlb_invalidate(pgdir, va);
 }
 
 //
