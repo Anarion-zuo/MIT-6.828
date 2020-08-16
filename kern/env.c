@@ -116,6 +116,16 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
+	// initialize to be 0
+	memset(envs, 0, NENV * sizeof(struct Env));
+	// make the linked list
+	// not setting the last element, therefore default to NULL by memset
+	for (size_t i = 0; i < NENV - 1;) {
+	    envs[i].env_link = &envs[++i];
+	}
+	// set linked list head
+	env_free_list = envs;
+	// free list setup done
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -179,7 +189,28 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
+    // memset(page2kva(p), 0, PGSIZE);   // no need to zero the page
+    // use kernel page as template
+    // can conveniently replace some of the entries, for the pages are marked not referenced
+    memcpy(page2kva(p), kern_pgdir, PGSIZE);
+    // must increment env_pgdir's reference count according to Hint
+    p->pp_ref++;
+    // setup Env structure
+    e->env_pgdir = page2kva(p);
+    /*
+    // insert mappings below UTOP
+    // user exception stack
+    page_insert(page2kva(p), pa2page(UTOP - PGSIZE), UTOP - PGSIZE, PTE_U | PTE_W);
+    pa2page(UTOP - PGSIZE)->pp_ref++;
+    // preserved empty memory just above USTACKTOP
+    // normal user stack
+    for (void *pa = UTEXT; pa < USTACKTOP; pa += PGSIZE) {
+        page_insert(page2kva(p), pa2page(pa), pa, PTE_U | PTE_W);
+        // must increment reference count for mappings below UTOP
+        pa2page(pa)->pp_ref++;
+    }
 
+    */
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
@@ -267,6 +298,22 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+	if (va >= UTOP) {
+	    panic("Mapping virtual address above UTOP for user environment...\n");
+	}
+	void *rva = ROUNDDOWN(va, PGSIZE);
+	size_t rlen = ROUNDUP(len, PGSIZE);
+	for (size_t i = 0; i < rlen; i += PGSIZE) {
+	    struct PageInfo *pp = page_alloc();
+	    if (pp == NULL) {
+	        panic("Allocation for user environment page failed...\n");
+	    }
+	    ++pp->pp_ref;
+	    int ret = page_insert(e->env_pgdir, pp, rva + i, PTE_W | PTE_U);
+	    if (ret == -E_NO_MEM) {
+	        panic("Allocation for user environment page table failed...\n");
+	    }
+	}
 }
 
 //
@@ -291,6 +338,48 @@ region_alloc(struct Env *e, void *va, size_t len)
 // load_icode panics if it encounters problems.
 //  - How might load_icode fail?  What might be wrong with the given input?
 //
+/*
+ * These are 2 helper functions not in the original code.
+ *
+ * memcpy_pgdir copies data from the source pointer src to another virtual address, but with a different page directory.
+ * The memory must be divided into chunks in order to deal with unknown mappings.
+ * The mappings used by the function are assumed to be set and valid for address translation, or the function causes mysterious bugs.
+ *
+ * memset_pgdir does essentially the same thing, but setting all memory entries to the same value, usually 0.
+ * All else is the same.
+ *
+ * These functions work between the kernel address space and the specified address space, determined at runtime.
+ */
+static void memcpy_pgdir(pde_t *pgdir, void *va_begin, void *src, size_t copyingSize) {
+    size_t binaryOffset = 0;
+    void *va = va_begin;
+    while (copyingSize > 0) {
+        struct PageInfo *pageInfo = page_lookup(pgdir, va, NULL);
+        size_t pgoff = PGOFF(va);
+        size_t step = PGSIZE - pgoff;
+        if (step > copyingSize) {
+            step = copyingSize;
+        }
+        memcpy(page2kva(pageInfo) + pgoff, src + binaryOffset, step);
+        copyingSize -= step;
+        binaryOffset += step;
+        va += step;
+    }
+}
+static void memset_pgdir(pde_t *pgdir, void *va_begin, size_t settingSize, int c) {
+    void *va = va_begin;
+    while (settingSize > 0) {
+        struct PageInfo *pageInfo = page_lookup(pgdir, va, NULL);
+        size_t pgoff = PGOFF(va);
+        size_t step = PGSIZE - pgoff;
+        if (step > settingSize) {
+            step = settingSize;
+        }
+        memset(page2kva(pageInfo) + pgoff, c, step);
+        settingSize -= step;
+        va += step;
+    }
+}
 static void
 load_icode(struct Env *e, uint8_t *binary)
 {
@@ -323,6 +412,33 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
+	struct Elf *elfHeader = binary;
+	if (elfHeader->e_magic != ELF_MAGIC) {
+	    panic("Elf binary sequence not valid at header magic number...\n");
+	}
+	// load each segment
+	struct Proghdr *ph = binary + elfHeader->e_phoff, phEnd = ph + elfHeader->e_phnum;
+	for (; ph < phEnd; ++ph) {
+	    if (ph->p_type != ELF_PROG_LOAD) {
+	        // does not load this type according to Hints
+            continue;
+	    }
+	    // read information on mapping
+	    void *va = ph->va;
+	    uint32_t memsz = ph->memsz, filesz = ph->filesz;
+	    if (memsz < filesz) {
+	        panic("ELF size in memory less than size in file...\n");
+	    }
+	    // make mappings
+	    region_alloc(e, va, memsz);
+
+	    // The current state uses not the page directory of the building environment, therefore must be dealt with caution.
+	    // These 2 functions are for cross-pgdir memory copying & setting.
+	    memcpy_pgdir(e->env_pgdir, va, binary + ph->p_offset, filesz);
+	    memset_pgdir(e->env_pgdir, va + filesz, memsz - filesz, 0);
+	    // set runnable status
+	    e->env_status = ENV_RUNNABLE;
+	}
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
@@ -341,6 +457,11 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
+	// allocate an Env
+	struct Env *env;
+	env_alloc(&env, 0);
+	load_icode(env, binary);
+	env->env_type = type;
 }
 
 //
@@ -457,7 +578,19 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-
-	panic("env_run not yet implemented");
+	// panic("env_run not yet implemented");
+	// Step 1
+	if (curenv) {
+	    if (curenv->env_status == ENV_RUNNING) {
+            curenv->env_status = ENV_RUNNABLE;
+        }
+	}
+	curenv = e;
+	curenv->env_status = ENV_RUNNING;
+	++curenv->env_runs;
+	lcr3(PADDR(curenv->env_pgdir));
+	// Step 2
+	// this call does not return
+	env_pop_tf(curenv->env_tf);
 }
 

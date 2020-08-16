@@ -42,10 +42,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6031a3b9-e268-4f63-baa7-b94be5ec20de" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/6.828lab.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/6.828lab.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/gdb_server_nox.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/gdb_server_nox.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inc/memlayout.h" beforeDir="false" afterPath="$PROJECT_DIR$/inc/memlayout.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kern/env.c" beforeDir="false" afterPath="$PROJECT_DIR$/kern/env.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kern/pmap.c" beforeDir="false" afterPath="$PROJECT_DIR$/kern/pmap.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -116,10 +114,10 @@
     <property name="restartRequiresConfirmation" value="false" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
-  <component name="RunManager" selected="GDB Remote Debug.qemu-gdb">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true">
+  <component name="RunManager" selected="Makefile.gdb-server-nox">
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
     <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
@@ -196,6 +194,7 @@
       <workItem from="1597238116197" duration="5563000" />
       <workItem from="1597249759173" duration="41184000" />
       <workItem from="1597467864426" duration="9728000" />
+      <workItem from="1597565777981" duration="24735000" />
     </task>
     <task id="LOCAL-00001" summary="lab1 complete">
       <created>1596812360758</created>
@@ -259,10 +258,10 @@
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
     <state x="269" y="199" width="933" height="659" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.24.1920.1056@0.24.1920.1056" timestamp="1597477691510" />
-    <state x="768" y="380" width="526" height="400" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1596635622770">
+    <state x="768" y="380" width="545" height="400" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1597570317159">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="768" y="380" width="526" height="400" key="#com.intellij.fileTypes.FileTypeChooser/0.24.1920.1056@0.24.1920.1056" timestamp="1596635622770" />
+    <state x="768" y="380" width="545" height="400" key="#com.intellij.fileTypes.FileTypeChooser/0.24.1920.1056@0.24.1920.1056" timestamp="1597570317159" />
     <state x="694" y="302" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1596390174166">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
@@ -283,45 +282,45 @@
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
     <state x="602" y="334" key="FileChooserDialogImpl/0.24.1920.1056@0.24.1920.1056" timestamp="1596382867884" />
-    <state width="1082" height="240" key="GridCell.Tab.0.bottom" timestamp="1597481317902">
+    <state width="1082" height="235" key="GridCell.Tab.0.bottom" timestamp="1597569868876">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="240" key="GridCell.Tab.0.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1597481317902" />
+    <state width="1082" height="235" key="GridCell.Tab.0.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868876" />
     <state width="1082" height="241" key="GridCell.Tab.0.bottom/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332479" />
-    <state width="1082" height="240" key="GridCell.Tab.0.center" timestamp="1597481317901">
+    <state width="1082" height="235" key="GridCell.Tab.0.center" timestamp="1597569868873">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="240" key="GridCell.Tab.0.center/0.24.1920.1056@0.24.1920.1056" timestamp="1597481317901" />
+    <state width="1082" height="235" key="GridCell.Tab.0.center/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868873" />
     <state width="1082" height="241" key="GridCell.Tab.0.center/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332478" />
-    <state width="1082" height="240" key="GridCell.Tab.0.left" timestamp="1597481317900">
+    <state width="1082" height="235" key="GridCell.Tab.0.left" timestamp="1597569868873">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="240" key="GridCell.Tab.0.left/0.24.1920.1056@0.24.1920.1056" timestamp="1597481317900" />
+    <state width="1082" height="235" key="GridCell.Tab.0.left/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868873" />
     <state width="1082" height="241" key="GridCell.Tab.0.left/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332477" />
-    <state width="1082" height="240" key="GridCell.Tab.0.right" timestamp="1597481317902">
+    <state width="1082" height="235" key="GridCell.Tab.0.right" timestamp="1597569868874">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="240" key="GridCell.Tab.0.right/0.24.1920.1056@0.24.1920.1056" timestamp="1597481317902" />
+    <state width="1082" height="235" key="GridCell.Tab.0.right/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868874" />
     <state width="1082" height="241" key="GridCell.Tab.0.right/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332478" />
-    <state width="1082" height="240" key="GridCell.Tab.1.bottom" timestamp="1597481318115">
+    <state width="1082" height="235" key="GridCell.Tab.1.bottom" timestamp="1597569868877">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="240" key="GridCell.Tab.1.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1597481318115" />
+    <state width="1082" height="235" key="GridCell.Tab.1.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868877" />
     <state width="1082" height="241" key="GridCell.Tab.1.bottom/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332480" />
-    <state width="1082" height="240" key="GridCell.Tab.1.center" timestamp="1597481318114">
+    <state width="1082" height="235" key="GridCell.Tab.1.center" timestamp="1597569868876">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="240" key="GridCell.Tab.1.center/0.24.1920.1056@0.24.1920.1056" timestamp="1597481318114" />
+    <state width="1082" height="235" key="GridCell.Tab.1.center/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868876" />
     <state width="1082" height="241" key="GridCell.Tab.1.center/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332479" />
-    <state width="1082" height="240" key="GridCell.Tab.1.left" timestamp="1597481318113">
+    <state width="1082" height="235" key="GridCell.Tab.1.left" timestamp="1597569868876">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="240" key="GridCell.Tab.1.left/0.24.1920.1056@0.24.1920.1056" timestamp="1597481318113" />
+    <state width="1082" height="235" key="GridCell.Tab.1.left/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868876" />
     <state width="1082" height="241" key="GridCell.Tab.1.left/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332479" />
-    <state width="1082" height="240" key="GridCell.Tab.1.right" timestamp="1597481318114">
+    <state width="1082" height="235" key="GridCell.Tab.1.right" timestamp="1597569868877">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="240" key="GridCell.Tab.1.right/0.24.1920.1056@0.24.1920.1056" timestamp="1597481318114" />
+    <state width="1082" height="235" key="GridCell.Tab.1.right/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868877" />
     <state width="1082" height="241" key="GridCell.Tab.1.right/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332480" />
     <state x="245" y="208" key="SettingsEditor" timestamp="1596544165189">
       <screen x="0" y="24" width="1920" height="1056" />
@@ -335,10 +334,10 @@
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
     <state x="886" y="274" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.24.1920.1056@0.24.1920.1056" timestamp="1596545511154" />
-    <state x="957" y="291" width="572" height="522" key="find.popup" timestamp="1597389452527">
-      <screen x="66" y="24" width="1854" height="1056" />
+    <state x="923" y="291" width="592" height="554" key="find.popup" timestamp="1597597588059">
+      <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="923" y="291" width="592" height="522" key="find.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1597331009860" />
+    <state x="923" y="291" width="592" height="554" key="find.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1597597588059" />
     <state x="957" y="291" width="572" height="522" key="find.popup/66.24.1854.1056@66.24.1854.1056" timestamp="1597389452527" />
     <state x="822" y="434" key="git4idea.remote.GitConfigureRemotesDialog" timestamp="1596812635049">
       <screen x="0" y="24" width="1920" height="1056" />
@@ -348,14 +347,14 @@
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
     <state x="472" y="455" width="694" height="214" key="makefile.clean.confirm.dialog/0.24.1920.1056@0.24.1920.1056" timestamp="1596821570696" />
-    <state x="876" y="249" width="672" height="677" key="run.anything.popup" timestamp="1597477075050">
+    <state x="876" y="249" width="672" height="677" key="run.anything.popup" timestamp="1597597593080">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="876" y="249" width="672" height="677" key="run.anything.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1597477075050" />
-    <state x="915" y="253" width="672" height="678" key="search.everywhere.popup" timestamp="1597392364066">
-      <screen x="66" y="24" width="1854" height="1056" />
+    <state x="876" y="249" width="672" height="677" key="run.anything.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1597597593080" />
+    <state x="879" y="253" width="672" height="678" key="search.everywhere.popup" timestamp="1597573040347">
+      <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="879" y="253" width="672" height="678" key="search.everywhere.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1597330981690" />
+    <state x="879" y="253" width="672" height="678" key="search.everywhere.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1597573040347" />
     <state x="915" y="253" width="672" height="678" key="search.everywhere.popup/66.24.1854.1056@66.24.1854.1056" timestamp="1597392364066" />
   </component>
   <component name="XDebuggerManager">
@@ -375,6 +374,16 @@
           <url>file://$PROJECT_DIR$/lib/printfmt.c</url>
           <line>169</line>
           <option name="timeStamp" value="23" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/kern/pmap.c</url>
+          <line>239</line>
+          <option name="timeStamp" value="24" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/kern/pmap.c</url>
+          <line>947</line>
+          <option name="timeStamp" value="25" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
