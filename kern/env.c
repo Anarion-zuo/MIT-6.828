@@ -120,8 +120,8 @@ env_init(void)
 	memset(envs, 0, NENV * sizeof(struct Env));
 	// make the linked list
 	// not setting the last element, therefore default to NULL by memset
-	for (size_t i = 0; i < NENV - 1;) {
-	    envs[i].env_link = &envs[++i];
+	for (size_t i = 0; i < NENV - 1; ++i) {
+	    envs[i].env_link = &envs[i + 1];
 	}
 	// set linked list head
 	env_free_list = envs;
@@ -192,11 +192,20 @@ env_setup_vm(struct Env *e)
     // memset(page2kva(p), 0, PGSIZE);   // no need to zero the page
     // use kernel page as template
     // can conveniently replace some of the entries, for the pages are marked not referenced
-    memcpy(page2kva(p), kern_pgdir, PGSIZE);
+    pde_t *upgdir = page2kva(p);
+    memcpy(upgdir, kern_pgdir, PGSIZE);
     // must increment env_pgdir's reference count according to Hint
     p->pp_ref++;
     // setup Env structure
-    e->env_pgdir = page2kva(p);
+    e->env_pgdir = upgdir;
+    // set page directory entries to user accessible
+    for (pde_t *pde = upgdir; pde < (pde_t*)((uintptr_t)upgdir + PGSIZE); ++pde) {
+        // cprintf("pde at %u user permission %u\n", pde - e->env_pgdir, *pde & PTE_U);
+        *pde |= PTE_U | PTE_W;
+    }
+    /*for (pde_t *pde = upgdir; pde < (pde_t*)((uintptr_t)upgdir + PGSIZE); ++pde) {
+        cprintf("pde at %u user permission %u\n", pde - e->env_pgdir, *pde & PTE_U);
+    }*/
     /*
     // insert mappings below UTOP
     // user exception stack
@@ -298,18 +307,18 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
-	if (va >= UTOP) {
+	if ((uintptr_t)va >= UTOP) {
 	    panic("Mapping virtual address above UTOP for user environment...\n");
 	}
 	void *rva = ROUNDDOWN(va, PGSIZE);
-	size_t rlen = ROUNDUP(len, PGSIZE);
-	for (size_t i = 0; i < rlen; i += PGSIZE) {
-	    struct PageInfo *pp = page_alloc();
+	void *rva_end = ROUNDUP(va + len, PGSIZE);
+	for (; rva < rva_end; rva += PGSIZE) {
+	    struct PageInfo *pp = page_alloc(0);
 	    if (pp == NULL) {
 	        panic("Allocation for user environment page failed...\n");
 	    }
-	    ++pp->pp_ref;
-	    int ret = page_insert(e->env_pgdir, pp, rva + i, PTE_W | PTE_U);
+	    // ++pp->pp_ref;
+	    int ret = page_insert(e->env_pgdir, pp, rva, PTE_W | PTE_U);
 	    if (ret == -E_NO_MEM) {
 	        panic("Allocation for user environment page table failed...\n");
 	    }
@@ -412,38 +421,51 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
-	struct Elf *elfHeader = binary;
+	struct Elf *elfHeader = (struct Elf *)binary;
 	if (elfHeader->e_magic != ELF_MAGIC) {
 	    panic("Elf binary sequence not valid at header magic number...\n");
 	}
 	// load each segment
-	struct Proghdr *ph = binary + elfHeader->e_phoff, phEnd = ph + elfHeader->e_phnum;
+	struct Proghdr *ph = (struct Proghdr *)(binary + elfHeader->e_phoff), *phEnd = ph + elfHeader->e_phnum;
 	for (; ph < phEnd; ++ph) {
 	    if (ph->p_type != ELF_PROG_LOAD) {
 	        // does not load this type according to Hints
             continue;
 	    }
 	    // read information on mapping
-	    void *va = ph->va;
-	    uint32_t memsz = ph->memsz, filesz = ph->filesz;
+	    void *va = (void *)ph->p_va;
+	    uint32_t memsz = ph->p_memsz, filesz = ph->p_filesz;
 	    if (memsz < filesz) {
 	        panic("ELF size in memory less than size in file...\n");
 	    }
 	    // make mappings
-	    region_alloc(e, va, memsz);
+	    if ((uint32_t)va == 0x800020) {
+            region_alloc(e, va, memsz);
+            cprintf("entry found 0x%lx\n", va);
+            cprintf("code memsz %u, filesz %u\n", memsz, filesz);
+            cprintf("page directory index %u\n", PDX(0x800020));
+            cprintf("page directory present %u after allocation...\n", e->env_pgdir[PDX(0x800020)] & PTE_P);
+        } else {
+            region_alloc(e, va, memsz);
+        }
 
 	    // The current state uses not the page directory of the building environment, therefore must be dealt with caution.
 	    // These 2 functions are for cross-pgdir memory copying & setting.
 	    memcpy_pgdir(e->env_pgdir, va, binary + ph->p_offset, filesz);
 	    memset_pgdir(e->env_pgdir, va + filesz, memsz - filesz, 0);
-	    // set runnable status
-	    e->env_status = ENV_RUNNABLE;
+        if ((uint32_t)va == 0x800020) {
+        }
 	}
+    // set runnable status
+    e->env_status = ENV_RUNNABLE;
+	// set entry in trap frame
+	e->env_tf.tf_eip = elfHeader->e_entry;
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 
 	// LAB 3: Your code here.
+	page_insert(e->env_pgdir, page_alloc(ALLOC_ZERO), (void *)(USTACKTOP - PGSIZE), PGSIZE);
 }
 
 //
@@ -537,10 +559,10 @@ env_destroy(struct Env *e)
 //
 // This function does not return.
 //
-void
-env_pop_tf(struct Trapframe *tf)
+inline void
+env_pop_tf(struct Trapframe *tf/*, pde_t *env_pgdir*/)
 {
-	asm volatile(
+    asm volatile(
 		"\tmovl %0,%%esp\n"
 		"\tpopal\n"
 		"\tpopl %%es\n"
@@ -585,12 +607,24 @@ env_run(struct Env *e)
             curenv->env_status = ENV_RUNNABLE;
         }
 	}
-	curenv = e;
-	curenv->env_status = ENV_RUNNING;
+    curenv = e;
+    curenv->env_status = ENV_RUNNING;
 	++curenv->env_runs;
-	lcr3(PADDR(curenv->env_pgdir));
-	// Step 2
+	// check permissions
+	/*
+    cprintf("adresss 0x800020 page directory user permission %u\n", curenv->env_pgdir[PDX(0x800020)] & PTE_U);
+    cprintf("adresss 0x800020 page directory present entry %u\n", curenv->env_pgdir[PDX(0x800020)] & PTE_P);
+    cprintf("adresss 0x800020 page directory write permission %u\n", curenv->env_pgdir[PDX(0x800020)] & PTE_W);
+	pte_t *entry_pte;
+	page_lookup(curenv->env_pgdir, (void *)0x800020, &entry_pte);
+    cprintf("adresss 0x800020 page table user permission %u\n", *entry_pte & PTE_U);
+    cprintf("adresss 0x800020 page table entry present %u\n", *entry_pte & PTE_P);
+    cprintf("adresss 0x800020 page table write permission %u\n", *entry_pte & PTE_W);
+    */
+	// change of page directory should be in env_pop_tf
+    lcr3(PADDR(curenv->env_pgdir));
+    // Step 2
 	// this call does not return
-	env_pop_tf(curenv->env_tf);
+	env_pop_tf(&curenv->env_tf);
 }
 

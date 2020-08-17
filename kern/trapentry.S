@@ -52,4 +52,5 @@
 /*
  * Lab 3: Your code here for _alltraps
  */
+_alltraps:
 

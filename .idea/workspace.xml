@@ -27,8 +27,8 @@
     <select>
       <path>
         <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
-        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
-        <item name="BRANCH:lab2" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
       </path>
     </select>
   </component>
@@ -42,9 +42,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6031a3b9-e268-4f63-baa7-b94be5ec20de" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/qemu_nox_boot.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/qemu_nox_kernel.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kern/env.c" beforeDir="false" afterPath="$PROJECT_DIR$/kern/env.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kern/env.h" beforeDir="false" afterPath="$PROJECT_DIR$/kern/env.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kern/pmap.c" beforeDir="false" afterPath="$PROJECT_DIR$/kern/pmap.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kern/trapentry.S" beforeDir="false" afterPath="$PROJECT_DIR$/kern/trapentry.S" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -114,12 +118,7 @@
     <property name="restartRequiresConfirmation" value="false" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
-  <component name="RunManager" selected="Makefile.gdb-server-nox">
-    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="GDB Remote Debug.qemu-gdb">
     <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
       <makefile filename="$PROJECT_DIR$/GNUmakefile" target="all" workingDirectory="" arguments="">
         <envs />
@@ -140,41 +139,13 @@
         <option name="RunConfigurationTask" enabled="true" run_configuration_name="all" run_configuration_type="MAKEFILE_TARGET_RUN_CONFIGURATION" />
       </method>
     </configuration>
-    <configuration name="gdb" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
-      <makefile filename="$PROJECT_DIR$/GNUmakefile" target="gdb" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
-    <configuration name="qemu-nox-gdb" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
-      <makefile filename="$PROJECT_DIR$/GNUmakefile" target="qemu-nox-gdb" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
-    <configuration name="qemu-nox" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
-      <makefile filename="$PROJECT_DIR$/GNUmakefile" target="qemu-nox" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
     <list>
       <item itemvalue="GDB Remote Debug.qemu-gdb" />
-      <item itemvalue="GDB Remote Debug.qemu-nox-boot" />
-      <item itemvalue="GDB Remote Debug.qemu-nox-kernel" />
       <item itemvalue="Makefile.all" />
-      <item itemvalue="Makefile.qemu-nox-gdb" />
-      <item itemvalue="Makefile.gdb" />
-      <item itemvalue="Makefile.qemu-nox" />
       <item itemvalue="Makefile.clean" />
-      <item itemvalue="Makefile.gdb-server-nox" />
       <item itemvalue="Makefile.gdb-server-window" />
+      <item itemvalue="Makefile.gdb-server-nox" />
     </list>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Makefile.all" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -194,7 +165,9 @@
       <workItem from="1597238116197" duration="5563000" />
       <workItem from="1597249759173" duration="41184000" />
       <workItem from="1597467864426" duration="9728000" />
-      <workItem from="1597565777981" duration="24735000" />
+      <workItem from="1597565777981" duration="28735000" />
+      <workItem from="1597637924044" duration="2775000" />
+      <workItem from="1597642775220" duration="24136000" />
     </task>
     <task id="LOCAL-00001" summary="lab1 complete">
       <created>1596812360758</created>
@@ -217,7 +190,14 @@
       <option name="project" value="LOCAL" />
       <updated>1597243410176</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="lab3 partA half, loading trapframe">
+      <created>1597597924385</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1597597924385</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -228,19 +208,7 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State>
-              <option name="FILTERS">
-                <map>
-                  <entry key="branch">
-                    <value>
-                      <list>
-                        <option value="lab2" />
-                      </list>
-                    </value>
-                  </entry>
-                </map>
-              </option>
-            </State>
+            <State />
           </value>
         </entry>
       </map>
@@ -251,13 +219,14 @@
     <MESSAGE value="lab1 complete" />
     <MESSAGE value="clion settings" />
     <MESSAGE value="lab 2 part 1" />
-    <option name="LAST_COMMIT_MESSAGE" value="lab 2 part 1" />
+    <MESSAGE value="lab3 partA half, loading trapframe" />
+    <option name="LAST_COMMIT_MESSAGE" value="lab3 partA half, loading trapframe" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="269" y="199" width="933" height="659" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1597477691510">
+    <state x="269" y="199" width="933" height="659" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1597666688460">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="269" y="199" width="933" height="659" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.24.1920.1056@0.24.1920.1056" timestamp="1597477691510" />
+    <state x="269" y="199" width="933" height="659" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.24.1920.1056@0.24.1920.1056" timestamp="1597666688460" />
     <state x="768" y="380" width="545" height="400" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1597570317159">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
@@ -266,14 +235,14 @@
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
     <state x="694" y="302" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.24.1920.1056@0.24.1920.1056" timestamp="1596390174166" />
-    <state x="1216" y="410" width="482" height="517" key="#xdebugger.evaluate" timestamp="1597476697624">
+    <state x="1252" y="340" width="482" height="517" key="#xdebugger.evaluate" timestamp="1597662513672">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="1216" y="410" width="482" height="517" key="#xdebugger.evaluate/0.24.1920.1056@0.24.1920.1056" timestamp="1597476697624" />
-    <state x="633" y="80" key="CommitChangelistDialog2" timestamp="1597243409736">
+    <state x="1252" y="340" width="482" height="517" key="#xdebugger.evaluate/0.24.1920.1056@0.24.1920.1056" timestamp="1597662513672" />
+    <state x="633" y="80" key="CommitChangelistDialog2" timestamp="1597597924134">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="633" y="80" key="CommitChangelistDialog2/0.24.1920.1056@0.24.1920.1056" timestamp="1597243409736" />
+    <state x="633" y="80" key="CommitChangelistDialog2/0.24.1920.1056@0.24.1920.1056" timestamp="1597597924134" />
     <state x="266" y="97" key="DiffContextDialog" timestamp="1596812656404">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
@@ -282,50 +251,50 @@
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
     <state x="602" y="334" key="FileChooserDialogImpl/0.24.1920.1056@0.24.1920.1056" timestamp="1596382867884" />
-    <state width="1082" height="235" key="GridCell.Tab.0.bottom" timestamp="1597569868876">
+    <state width="1874" height="294" key="GridCell.Tab.0.bottom" timestamp="1597668784680">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="235" key="GridCell.Tab.0.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868876" />
+    <state width="1874" height="294" key="GridCell.Tab.0.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1597668784680" />
     <state width="1082" height="241" key="GridCell.Tab.0.bottom/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332479" />
-    <state width="1082" height="235" key="GridCell.Tab.0.center" timestamp="1597569868873">
+    <state width="1874" height="294" key="GridCell.Tab.0.center" timestamp="1597668784680">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="235" key="GridCell.Tab.0.center/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868873" />
+    <state width="1874" height="294" key="GridCell.Tab.0.center/0.24.1920.1056@0.24.1920.1056" timestamp="1597668784680" />
     <state width="1082" height="241" key="GridCell.Tab.0.center/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332478" />
-    <state width="1082" height="235" key="GridCell.Tab.0.left" timestamp="1597569868873">
+    <state width="1874" height="294" key="GridCell.Tab.0.left" timestamp="1597668784680">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="235" key="GridCell.Tab.0.left/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868873" />
+    <state width="1874" height="294" key="GridCell.Tab.0.left/0.24.1920.1056@0.24.1920.1056" timestamp="1597668784680" />
     <state width="1082" height="241" key="GridCell.Tab.0.left/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332477" />
-    <state width="1082" height="235" key="GridCell.Tab.0.right" timestamp="1597569868874">
+    <state width="1874" height="294" key="GridCell.Tab.0.right" timestamp="1597668784680">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="235" key="GridCell.Tab.0.right/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868874" />
+    <state width="1874" height="294" key="GridCell.Tab.0.right/0.24.1920.1056@0.24.1920.1056" timestamp="1597668784680" />
     <state width="1082" height="241" key="GridCell.Tab.0.right/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332478" />
-    <state width="1082" height="235" key="GridCell.Tab.1.bottom" timestamp="1597569868877">
+    <state width="1874" height="294" key="GridCell.Tab.1.bottom" timestamp="1597668784681">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="235" key="GridCell.Tab.1.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868877" />
+    <state width="1874" height="294" key="GridCell.Tab.1.bottom/0.24.1920.1056@0.24.1920.1056" timestamp="1597668784681" />
     <state width="1082" height="241" key="GridCell.Tab.1.bottom/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332480" />
-    <state width="1082" height="235" key="GridCell.Tab.1.center" timestamp="1597569868876">
+    <state width="1874" height="294" key="GridCell.Tab.1.center" timestamp="1597668784681">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="235" key="GridCell.Tab.1.center/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868876" />
+    <state width="1874" height="294" key="GridCell.Tab.1.center/0.24.1920.1056@0.24.1920.1056" timestamp="1597668784681" />
     <state width="1082" height="241" key="GridCell.Tab.1.center/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332479" />
-    <state width="1082" height="235" key="GridCell.Tab.1.left" timestamp="1597569868876">
+    <state width="1874" height="294" key="GridCell.Tab.1.left" timestamp="1597668784680">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="235" key="GridCell.Tab.1.left/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868876" />
+    <state width="1874" height="294" key="GridCell.Tab.1.left/0.24.1920.1056@0.24.1920.1056" timestamp="1597668784680" />
     <state width="1082" height="241" key="GridCell.Tab.1.left/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332479" />
-    <state width="1082" height="235" key="GridCell.Tab.1.right" timestamp="1597569868877">
+    <state width="1874" height="294" key="GridCell.Tab.1.right" timestamp="1597668784681">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state width="1082" height="235" key="GridCell.Tab.1.right/0.24.1920.1056@0.24.1920.1056" timestamp="1597569868877" />
+    <state width="1874" height="294" key="GridCell.Tab.1.right/0.24.1920.1056@0.24.1920.1056" timestamp="1597668784681" />
     <state width="1082" height="241" key="GridCell.Tab.1.right/66.24.1854.1056@66.24.1854.1056" timestamp="1597417332480" />
-    <state x="245" y="208" key="SettingsEditor" timestamp="1596544165189">
+    <state x="245" y="208" key="SettingsEditor" timestamp="1597642752947">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="245" y="208" key="SettingsEditor/0.24.1920.1056@0.24.1920.1056" timestamp="1596544165189" />
+    <state x="245" y="208" key="SettingsEditor/0.24.1920.1056@0.24.1920.1056" timestamp="1597642752947" />
     <state x="634" y="270" width="808" height="532" key="Vcs.Push.Dialog.v2" timestamp="1597317260086">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
@@ -334,10 +303,10 @@
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
     <state x="886" y="274" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.24.1920.1056@0.24.1920.1056" timestamp="1596545511154" />
-    <state x="923" y="291" width="592" height="554" key="find.popup" timestamp="1597597588059">
+    <state x="923" y="291" width="592" height="554" key="find.popup" timestamp="1597662350706">
       <screen x="0" y="24" width="1920" height="1056" />
     </state>
-    <state x="923" y="291" width="592" height="554" key="find.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1597597588059" />
+    <state x="923" y="291" width="592" height="554" key="find.popup/0.24.1920.1056@0.24.1920.1056" timestamp="1597662350706" />
     <state x="957" y="291" width="572" height="522" key="find.popup/66.24.1854.1056@66.24.1854.1056" timestamp="1597389452527" />
     <state x="822" y="434" key="git4idea.remote.GitConfigureRemotesDialog" timestamp="1596812635049">
       <screen x="0" y="24" width="1920" height="1056" />
@@ -375,16 +344,6 @@
           <line>169</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/kern/pmap.c</url>
-          <line>239</line>
-          <option name="timeStamp" value="24" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/kern/pmap.c</url>
-          <line>947</line>
-          <option name="timeStamp" value="25" />
-        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
     <watches-manager>
@@ -395,6 +354,11 @@
         <watch expression="end" language="ObjectiveC" />
         <watch expression="npages_basemem" language="ObjectiveC" />
         <watch expression="PADDR(pp)" language="ObjectiveC" />
+        <watch expression="curenv" language="ObjectiveC" />
+        <watch expression="&amp;curenv" language="ObjectiveC" />
+        <watch expression="(struct PageInfo *)0xf0186dc8" language="ObjectiveC" />
+        <watch expression="&amp;tf" language="ObjectiveC" />
+        <watch expression="kern_pgdir" language="ObjectiveC" />
       </configuration>
     </watches-manager>
   </component>

@@ -200,7 +200,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-    boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_W);
+    boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_W | PTE_U);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
@@ -209,7 +209,7 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
-    boot_map_region(kern_pgdir, UENVS, PTSIZE, PADDR(envs), PTE_W);
+    boot_map_region(kern_pgdir, UENVS, PTSIZE, PADDR(envs), PTE_W | PTE_U);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -222,8 +222,7 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-    boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
-//    boot_map_region(kern_pgdir, KSTACKTOP - PTSIZE, PTSIZE - KSTKSIZE, PADDR(bootstack) + KSTKSIZE, 0);
+    boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_U);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -233,8 +232,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-//    boot_map_region(kern_pgdir, KERNBASE, npages * PGSIZE, 0, PTE_W);
-    boot_map_region(kern_pgdir, KERNBASE, 0x100000000 - KERNBASE, 0, PTE_W);
+    boot_map_region(kern_pgdir, KERNBASE, 0x100000000 - KERNBASE, 0, PTE_W | PTE_U);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -499,7 +497,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
      * I now use the indices to index the tables.
      */
     // indexing page directory
-    pde_t *pde = &kern_pgdir[pdx];
+    pde_t *pde = &pgdir[pdx];
 
     /*
      * The page table information is obtained.
@@ -507,7 +505,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
      * Page table is, by itself, a page.
      * If the page of the page table does not exist, it must be allocated.
      */
-    if (!*pde & PTE_P) {
+    if ((*pde & PTE_P) == 0) {
         // page table does not exist
         if (create) {
             // allocate new page
@@ -526,6 +524,14 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
     pte_t *pgtbl = (pte_t *)KADDR(PTE_ADDR(*pde));
     // indexing page table
     pte_t *pte = &pgtbl[ptx];
+    /*
+     * The purpose of this function is to obtain the page table entry for the given page directory and virtual address.
+     * Therefore returns a kernel address, which can be dereferenced conveniently under kernel mode.
+     * The physical address of a page table entry is meaningless, as it is not of the head of a page.
+     * Only the content of the page table entry, the address of a page frame,
+     *  and the content of a page directory entry, the address of a page table, have sane physical address,
+     *  as they are the first address of a page.
+     */
 	return pte;
 }
 
@@ -645,6 +651,8 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 	if (pte_store) {
 	    *pte_store = pte;
 	}
+	// pte is a kernel address, pointing to a place storing physical address
+	// thus can be used directly
     struct PageInfo *pageInfo = pa2page(PTE_ADDR(*pte));
 	return pageInfo;
 }
@@ -798,7 +806,7 @@ check_page_free_list(bool only_low_memory)
 		size_t this_diff = last - this;
 		if (this_diff != diff) {
 		    diff = this_diff;
-		    cprintf("new diff: %lu 0x%lx, last: 0x%lx, this: 0x%lx\n", diff, diff, last, this);
+//		    cprintf("new diff: %lu 0x%lx, last: 0x%lx, this: 0x%lx\n", diff, diff, last, this);
 		}
 //		cprintf("list addr: 0x%lx\n", pp);
 

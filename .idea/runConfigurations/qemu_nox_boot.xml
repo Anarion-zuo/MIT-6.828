@@ -1,5 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="qemu-nox-boot" type="CLion_Remote" debugger="/usr/bin/gdb" remoteCommand="127.0.0.1:26000" symbolFile="$PROJECT_DIR$/obj/boot/boot.out" sysroot="$PROJECT_DIR$/">
-    <method v="2" />
-  </configuration>
-</component>
