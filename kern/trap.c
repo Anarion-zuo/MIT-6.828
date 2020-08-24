@@ -58,6 +58,10 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
+#define DECLARE_TRAPENTRY(func_name, entry_num) \
+    void func_name();                \
+    SETGATE(idt[entry_num], 0, GD_KT, func_name, 0)
+
 
 void
 trap_init(void)
@@ -65,8 +69,34 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	/*
+	 * This is a test for IDT setup.
+	 * Only Divide-by-0, indexed by 0, is set to the idt.
+	 * Args to macro after idt[]:
+	 *  - set this to be a trap.
+	 *  - code segment selector in gdt is 1, according to boot/boot.S.
+	 *  - offset in code segment is function address of the handler.
+	 *  - set handler privilege level to be kernel level.
+	 */
+    DECLARE_TRAPENTRY(t_divide, T_DIVIDE)
+    DECLARE_TRAPENTRY(t_debug, T_DEBUG)
+    DECLARE_TRAPENTRY(t_nmi, T_NMI)
+    DECLARE_TRAPENTRY(t_brkpt, T_BRKPT)
+    DECLARE_TRAPENTRY(t_oflow, T_OFLOW)
+    DECLARE_TRAPENTRY(t_bound, T_BOUND)
+    DECLARE_TRAPENTRY(t_illop, T_ILLOP)
+    DECLARE_TRAPENTRY(t_device, T_DEVICE)
+    DECLARE_TRAPENTRY(t_dblflt, T_DBLFLT)
+    DECLARE_TRAPENTRY(t_tss, T_TSS)
+    DECLARE_TRAPENTRY(t_segnp, T_SEGNP)
+    DECLARE_TRAPENTRY(t_stack, T_STACK)
+    DECLARE_TRAPENTRY(t_gpflt, T_GPFLT)
+    DECLARE_TRAPENTRY(t_fperr, T_FPERR)
+    DECLARE_TRAPENTRY(t_align, T_ALIGN)
+    DECLARE_TRAPENTRY(t_mchk, T_MCHK)
+    DECLARE_TRAPENTRY(t_simderr, T_SIMDERR)
 
-	// Per-CPU setup 
+    // Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -139,11 +169,23 @@ print_regs(struct PushRegs *regs)
 	cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
+static void handle_divzero() {
+//    cprintf("exception: divide by zero encoutered.\n");
+}
+
 static void
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+    switch (tf->tf_trapno) {
+        case T_DIVIDE:
+            handle_divzero();
+//            return;
+        default:
+//            cprintf("trap caught! number %u\n", tf->tf_trapno);
+            break;
+    }
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
