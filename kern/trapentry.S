@@ -59,16 +59,18 @@
     TRAPHANDLER(t_segnp, T_SEGNP)
     TRAPHANDLER(t_stack, T_STACK)
     TRAPHANDLER(t_gpflt, T_GPFLT)
+    TRAPHANDLER(t_pgflt, T_PGFLT)
     TRAPHANDLER(t_fperr, T_FPERR)
     TRAPHANDLER(t_align, T_ALIGN)
     TRAPHANDLER(t_mchk, T_MCHK)
     TRAPHANDLER(t_simderr, T_SIMDERR)
 
+    TRAPHANDLER_NOEC(t_syscall, T_SYSCALL)
+
 
 /*
  * Lab 3: Your code here for _alltraps
  */
- .global _alltraps
 _alltraps:
     # entering function
     # pushl %ebp

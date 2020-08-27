@@ -325,7 +325,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 	        panic("region_alloc: Allocation for user environment page failed...\n");
 	    }
 	    // ++pp->pp_ref;
-	    int ret = page_insert(e->env_pgdir, pp, rva, PTE_W | PTE_U/* | PTE_P*/);
+	    int ret = page_insert(e->env_pgdir, pp, rva, PTE_W | PTE_U);
 	    if (ret < 0) {
 	        panic("region_alloc: %e\n", ret);
 	    }

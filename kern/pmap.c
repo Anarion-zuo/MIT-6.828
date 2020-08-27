@@ -720,11 +720,43 @@ static uintptr_t user_mem_check_addr;
 // Returns 0 if the user program can access this range of addresses,
 // and -E_FAULT otherwise.
 //
+/*
+ * This is a helper function, extracting common codes of checking permissions.
+ * The function returns 0 on permission granted, -1 otherwise.
+ */
+static int
+check_perm_page_begin(pde_t *pgdir, const void *va, int perm) {
+    pte_t *pte = pgdir_walk(pgdir, va, 0);
+    if (pte == NULL) {
+        return -1;
+    }
+    if ((*pte & perm) != perm) {
+        return -1;
+    }
+    return 0;
+}
 int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
-
+	if ((uintptr_t)va >= ULIM) {
+	    user_mem_check_addr = (uintptr_t)va;
+	    return -E_FAULT;
+	}
+	perm |= PTE_P | PTE_U;
+	const void *va_begin = ROUNDDOWN(va, PGSIZE), *va_end = ROUNDUP(va + len, PGSIZE);
+	// check the first page directly
+	if (check_perm_page_begin(env->env_pgdir, va_begin, perm)) {
+	    user_mem_check_addr = (uintptr_t)va;
+	    return -E_FAULT;
+	}
+	// check other pages
+	for (va = va_begin + PGSIZE; va < va_end; va += PGSIZE) {
+        if (check_perm_page_begin(env->env_pgdir, va, perm)) {
+            user_mem_check_addr = (uintptr_t)va;
+            return -E_FAULT;
+        }
+	}
 	return 0;
 }
 
