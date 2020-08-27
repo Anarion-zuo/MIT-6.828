@@ -65,6 +65,13 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
+#define DECLARE_TRAPENTRY(func_name, entry_num, privLevel) \
+    void func_name();                \
+    SETGATE(idt[entry_num], 1, GD_KT, func_name, privLevel)
+
+#define DECLARE_INTENTRY(funcName, intNumber, privLevel) \
+    void funcName();                \
+    SETGATE(idt[intNumber], 0, GD_KT, funcName, privLevel)
 
 void
 trap_init(void)
@@ -72,8 +79,37 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	/*
+	 * This is a test for IDT setup.
+	 * Only Divide-by-0, indexed by 0, is set to the idt.
+	 * Args to macro after idt[]:
+	 *  - set this to be a trap.
+	 *  - code segment selector in gdt is 1, according to boot/boot.S.
+	 *  - offset in code segment is function address of the handler.
+	 *  - set handler privilege level to be kernel level.
+	 */
+    DECLARE_INTENTRY(t_divide, T_DIVIDE, 0)
+    DECLARE_INTENTRY(t_debug, T_DEBUG, 3)
+    DECLARE_INTENTRY(t_nmi, T_NMI, 0)
+    DECLARE_TRAPENTRY(t_brkpt, T_BRKPT, 3)
+    DECLARE_INTENTRY(t_oflow, T_OFLOW, 0)
+    DECLARE_INTENTRY(t_bound, T_BOUND, 0)
+    DECLARE_INTENTRY(t_illop, T_ILLOP, 0)
+    DECLARE_INTENTRY(t_device, T_DEVICE, 0)
+    DECLARE_INTENTRY(t_dblflt, T_DBLFLT, 0)
+    DECLARE_INTENTRY(t_tss, T_TSS, 0)
+    DECLARE_INTENTRY(t_segnp, T_SEGNP, 0)
+    DECLARE_INTENTRY(t_stack, T_STACK, 0)
+    DECLARE_INTENTRY(t_gpflt, T_GPFLT, 0)
+    DECLARE_INTENTRY(t_pgflt, T_PGFLT, 3)
+    DECLARE_INTENTRY(t_fperr, T_FPERR, 0)
+    DECLARE_INTENTRY(t_align, T_ALIGN, 0)
+    DECLARE_INTENTRY(t_mchk, T_MCHK, 0)
+    DECLARE_INTENTRY(t_simderr, T_SIMDERR, 0)
 
-	// Per-CPU setup 
+    DECLARE_TRAPENTRY(t_syscall, T_SYSCALL, 3)
+
+    // Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -171,11 +207,49 @@ print_regs(struct PushRegs *regs)
 	cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
+static void handle_divzero() {
+//    cprintf("exception: divide by zero encoutered.\n");
+}
+
+static void debug_breakpoint_handler(struct Trapframe *tf) {
+    print_trapframe(tf);
+    cprintf("Breakpoint at:\n");
+    //mon_traptrace(0, NULL, tf);
+    monitor_welcome();
+    monitor_run(tf);
+}
+
+static void handle_syscall(struct Trapframe *tf) {
+    // this function extracts registers from Trapframe and passes them onto real syscall dispatcher
+    struct PushRegs *pushRegs = &tf->tf_regs;
+    pushRegs->reg_eax = syscall(pushRegs->reg_eax, pushRegs->reg_edx, pushRegs->reg_ecx, pushRegs->reg_ebx, pushRegs->reg_edi, pushRegs->reg_esi);
+}
+
 static void
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+    switch (tf->tf_trapno) {
+        case T_DIVIDE:
+            //return;
+            break;
+        case T_DEBUG:
+            debug_breakpoint_handler(tf);
+            return ;
+        case T_BRKPT:
+            debug_breakpoint_handler(tf);
+            return;
+        case T_PGFLT:
+            page_fault_handler(tf);
+            return;
+        case T_SYSCALL:
+            handle_syscall(tf);
+            return;
+        default:
+//            cprintf("trap caught! number %u\n", tf->tf_trapno);
+            break;
+    }
 
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
@@ -269,8 +343,12 @@ page_fault_handler(struct Trapframe *tf)
 	fault_va = rcr2();
 
 	// Handle kernel-mode page faults.
+    // LAB 3: Your code here.
 
-	// LAB 3: Your code here.
+    if ((tf->tf_cs & 3) != 3) {
+        // tf comes from user mode
+	    panic("Page fault in kernel mode!\n");
+	}
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.

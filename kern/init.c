@@ -57,6 +57,16 @@ i386_init(void)
 
 	// Schedule and run the first user environment!
 	sched_yield();
+	ENV_CREATE(user_softint, ENV_TYPE_USER);
+#endif // TEST*
+
+	// We only have one user environment for now, so just run it.
+	env_run(&envs[0]);
+
+	// Drop into the kernel monitor.
+	while (1)
+		monitor(NULL);
+>>>>>>> lab3
 }
 
 // While boot_aps is booting a given CPU, it communicates the per-core
