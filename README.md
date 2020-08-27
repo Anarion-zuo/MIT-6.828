@@ -1,5 +1,5 @@
 # MIT 6.828 Labs
-This is an implementation of `MIT 6.828 Operating System Engineering`'s labs. 
+This is an implementation of `MIT 6.828 Operating System Engineering`'s [labs](https://pdos.csail.mit.edu/6.828/2018/schedule.html). 
 
 I am writing blogs on [zhihu.com](https://zhuanlan.zhihu.com/c_1273723917820215296), giving explanation to this implementation. The first blog is [Lab1](https://zhuanlan.zhihu.com/p/166413604), just in case the previous link doesn't work.
 
