@@ -61,6 +61,7 @@ dumbfork(void)
 		thisenv = &envs[ENVX(sys_getenvid())];
 		return 0;
 	}
+//    cprintf("child id: %d\n", envid);
 
 	// We're the parent.
 	// Eagerly copy our entire address space into the child.

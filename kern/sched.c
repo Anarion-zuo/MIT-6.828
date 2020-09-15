@@ -30,6 +30,35 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 
+	size_t i = 0;
+	if (curenv) {
+	    // above 0 is for special case when no env is running at init time
+        i = ENVX(curenv->env_id) + 1;
+	}
+	while (1) {
+	    if (i == NENV) {
+	        // switch back when hit end
+	        i = 0;
+	    }
+	    idle = &envs[i];
+	    if (idle == curenv) {
+	        // no need for worrying NULL idle, for it is impossible.
+	        // finished a cycle
+	        if (curenv->env_status == ENV_RUNNING) {
+	            // current env still runnable
+	            // context switch
+                env_run(idle);
+	        }
+	        // no runnable env found
+	        break;
+	    }
+	    if (idle->env_status == ENV_RUNNABLE) {
+	        // a runnable env found
+	        // context switch
+	        env_run(idle);
+	    }
+        ++i;
+    }
 	// sched_halt never returns
 	sched_halt();
 }

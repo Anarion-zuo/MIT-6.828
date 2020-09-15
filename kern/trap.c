@@ -14,7 +14,7 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
-static struct Taskstate ts;
+//static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
  * a saved trapframe and printing the current trapframe and print some
@@ -144,18 +144,19 @@ trap_init_percpu(void)
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
-	ts.ts_esp0 = KSTACKTOP;
-	ts.ts_ss0 = GD_KD;
-	ts.ts_iomb = sizeof(struct Taskstate);
+	struct Taskstate *ts = &thiscpu->cpu_ts;
+	ts->ts_esp0 = KSTACKTOP - thiscpu->cpu_id * (KSTKSIZE + KSTKGAP);
+	ts->ts_ss0 = GD_KD;
+	ts->ts_iomb = sizeof(struct Taskstate);
 
 	// Initialize the TSS slot of the gdt.
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t) (&ts),
+	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id] = SEG16(STS_T32A, (uint32_t) (ts),
 					sizeof(struct Taskstate) - 1, 0);
-	gdt[GD_TSS0 >> 3].sd_s = 0;
+	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id].sd_s = 0;
 
 	// Load the TSS selector (like other segment selectors, the
 	// bottom three bits are special; we leave them 0)
-	ltr(GD_TSS0);
+	ltr(GD_TSS0 + (thiscpu->cpu_id << 3));
 
 	// Load the IDT
 	lidt(&idt_pd);
@@ -212,11 +213,10 @@ static void handle_divzero() {
 }
 
 static void debug_breakpoint_handler(struct Trapframe *tf) {
-    print_trapframe(tf);
-    cprintf("Breakpoint at:\n");
-    //mon_traptrace(0, NULL, tf);
-    monitor_welcome();
-    monitor_run(tf);
+//    print_trapframe(tf);
+//    cprintf("Breakpoint at:\n");
+//    monitor_welcome();
+//    monitor_run(tf);
 }
 
 static void handle_syscall(struct Trapframe *tf) {
@@ -300,6 +300,9 @@ trap(struct Trapframe *tf)
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
+
+		lock_kernel();
+
 		assert(curenv);
 
 		// Garbage collect if current enviroment is a zombie
@@ -346,7 +349,9 @@ page_fault_handler(struct Trapframe *tf)
     // LAB 3: Your code here.
 
     if ((tf->tf_cs & 3) != 3) {
-        // tf comes from user mode
+        // tf comes from kernel mode
+        cprintf("kernel fault va %08x ip %08x\n",
+                fault_va, tf->tf_eip);
 	    panic("Page fault in kernel mode!\n");
 	}
 
@@ -383,6 +388,8 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+
+
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",

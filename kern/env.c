@@ -685,6 +685,7 @@ env_run(struct Env *e)
        - trigger interrupt.
       The function come out into user space.
      */
+    unlock_kernel();
 	// this call does not return
 	env_pop_tf(&curenv->env_tf);
 }

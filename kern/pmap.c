@@ -286,6 +286,13 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
+	for (int i = 0; i < NCPU; ++i) {
+        boot_map_region(kern_pgdir,
+                        KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE,
+                        KSTKSIZE,
+                        (physaddr_t)PADDR(percpu_kstacks[i]),
+                        PTE_W);
+    }
 
 }
 
@@ -346,32 +353,37 @@ page_init(void)
 	// Change the code to reflect this.
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
-//    cprintf("pages addr: %lx\n", pages);
 	// Don't mark reference count!
 	pages[0].pp_ref = 0;
     pages[0].pp_link = NULL;
     page_free_list = &pages[0];
+    // compute boundries on MPENTRY_PADDR
+    size_t npages_before_mp = MPENTRY_PADDR / PGSIZE;
     // do base memory
     size_t i = 1;
-    for (; i < npages_basemem; i++) {
+    for (; i < npages_before_mp; i++) {
 		pages[i].pp_ref = 0;  // Don't mark reference count!
 		// connect the previous page
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
-//	cprintf("npages_basemen: %d, first end addr: 0x%lx\n", npages_basemem, &pages[i]);
-//    cprintf("end of basemem: 0x%lx\n", npages_basemem * 4096);
-	// extended
-
-	// between EXT and pages
-//    i = EXTPHYSMEM / PGSIZE;
-//    for (; (void *)pages > page2kva(&pages[i + 1]); ++i) {
-//        pages[i].pp_ref = 0;  // Don't mark reference count!
-//        // connect the previous page
-//        pages[i].pp_link = page_free_list;
-//        page_free_list = &pages[i];
-//    }
-	// after pages
+    // skip MPENTRY_PADDR
+    // compute new begin
+    extern unsigned char mpentry_start[], mpentry_end[];
+    size_t mpentry_len = mpentry_end - mpentry_start;
+    size_t mpentry_npages = mpentry_len / PGSIZE, mpentry_more = mpentry_len % PGSIZE;
+    if (mpentry_more) {
+        ++mpentry_npages;
+    }
+    i = npages_before_mp + mpentry_npages;
+    for (; i < npages_basemem; i++) {
+        pages[i].pp_ref = 0;  // Don't mark reference count!
+        // connect the previous page
+        pages[i].pp_link = page_free_list;
+        page_free_list = &pages[i];
+    }
+    // skip kernel data
+	// compute new begin
 	i = PADDR(boot_alloc(0)) / PGSIZE;
 //	cprintf("next beginning: %d, second begin addr: %lx\n", i, &pages[i]);
 	for (; i < npages; ++i) {
@@ -766,7 +778,17 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+	// panic("mmio_map_region not implemented");
+	physaddr_t pa_begin = ROUNDDOWN(pa, PGSIZE);
+	physaddr_t pa_end = ROUNDUP(pa + size, PGSIZE);
+	if (pa_end - pa_begin >= MMIOLIM - MMIOBASE) {
+	    panic("mmio_map_region: requesting size too large.\n");
+	}
+	size = pa_end - pa_begin;
+	boot_map_region(kern_pgdir, base, size, pa_begin, PTE_W | PTE_PCD | PTE_PWT);
+	void *ret = (void *)base;
+	base += size;
+	return ret;
 }
 
 static uintptr_t user_mem_check_addr;
@@ -1037,9 +1059,15 @@ check_kern_pgdir(void)
 	// (updated in lab 4 to check per-CPU kernel stacks)
 	for (n = 0; n < NCPU; n++) {
 		uint32_t base = KSTACKTOP - (KSTKSIZE + KSTKGAP) * (n + 1);
-		for (i = 0; i < KSTKSIZE; i += PGSIZE)
-			assert(check_va2pa(pgdir, base + KSTKGAP + i)
-				== PADDR(percpu_kstacks[n]) + i);
+		for (i = 0; i < KSTKSIZE; i += PGSIZE) {
+		    cprintf("CPU %u, check_va2pa: 0x%lx, percpu_kstacks: 0x%lx\n",
+                    n,
+                    check_va2pa(pgdir, base + KSTKGAP + i),
+                    PADDR(percpu_kstacks[n]) + i);
+            assert(check_va2pa(pgdir, base + KSTKGAP + i)
+                   == PADDR(percpu_kstacks[n]) + i);
+		}
+
 		for (i = 0; i < KSTKGAP; i += PGSIZE)
 			assert(check_va2pa(pgdir, base + i) == ~0);
 	}
