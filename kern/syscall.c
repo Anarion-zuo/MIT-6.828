@@ -168,7 +168,7 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 
 static int
 check_user_page_perm(int perm) {
-    if ((perm & (PTE_U | PTE_P)) != (PTE_U | PTE_P)) {
+    if ((perm & (PTE_U)) != (PTE_U)) {
         // these 2 must be set
         return -E_INVAL;
     }
@@ -181,7 +181,7 @@ check_user_page_perm(int perm) {
 
 static int
 check_va_bound_round(void *va) {
-    if ((uintptr_t)va >= UTOP || (uintptr_t)va % PGSIZE != 0) {
+    if ((uintptr_t)va > UTOP || (uintptr_t)va % PGSIZE != 0) {
         return -E_INVAL;
     }
     return 0;
@@ -216,6 +216,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	// LAB 4: Your code here.
 	// panic("sys_page_alloc not implemented");
     int ret;
+//    cprintf("envid %d va 0x%lx write %d user %d\n", envid, va, perm & PTE_W, perm & PTE_U);
 
     // check envid
     struct Env *env;
@@ -460,6 +461,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             return sys_page_map(a1, (void *)a2, a3, (void *)a4, a5);
         case SYS_page_unmap:
             return sys_page_unmap(a1, (void *)a2);
+	    case SYS_env_set_pgfault_upcall:
+	        return sys_env_set_pgfault_upcall(a1, (void *)a2);
 
         case NSYSCALLS:
         default:

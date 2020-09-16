@@ -78,7 +78,20 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+	// panic("fork not implemented");
+
+	// set page fault handler
+	set_pgfault_handler(pgfault);
+
+	// create empty env
+	envid_t newid = sys_exofork();
+	if (newid < 0) {
+	    panic("exofork failed!\n");
+	}
+
+	// cased return is taken care of
+	// this return is for the parent
+	return newid;
 }
 
 // Challenge!

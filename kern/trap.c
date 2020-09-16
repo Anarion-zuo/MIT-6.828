@@ -14,6 +14,8 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
+#include <inc/string.h>
+
 //static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
@@ -336,6 +338,19 @@ trap(struct Trapframe *tf)
 		sched_yield();
 }
 
+static int va_in_exceptionstack(void *va) {
+    return (uint32_t)va <= UXSTACKTOP && (uint32_t)va > UXSTACKTOP - PGSIZE;
+}
+
+static void page_fault_exit(uint32_t fault_va, struct Trapframe *tf) {
+    // Destroy the environment that caused the fault.
+    cprintf("[%08x] user fault va %08x ip %08x\n",
+            curenv->env_id, fault_va, tf->tf_eip);
+    print_trapframe(tf);
+    env_destroy(curenv);
+}
+
+extern void _pgfault_upcall(void);
 
 void
 page_fault_handler(struct Trapframe *tf)
@@ -388,13 +403,60 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+	int ret;
 
+    // check user permissions
+    /*
+    ret = user_mem_check(curenv, (void *)fault_va, PGSIZE, PTE_U | PTE_W);
+    if (ret < 0) {
+        page_fault_exit(fault_va, tf);
+        return;
+    }
+     */
 
+    struct Trapframe *envtf = &curenv->env_tf;
+    if (curenv->env_pgfault_upcall == NULL) {
+        // no upcall
+        page_fault_exit(fault_va, tf);
+        return;
+    }
+    if (envtf->tf_esp > USTACKTOP && envtf->tf_esp <= UXSTACKTOP - PGSIZE) {
+        // exception stack out of space
+        page_fault_exit(fault_va, tf);
+        return;
+    }
+    cprintf("user fault 0x%lx eip 0x%lx esp 0x%lx\n", fault_va, envtf->tf_eip, envtf->tf_esp);
+//    print_trapframe(tf);
+    // setup env
 
-	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
-	print_trapframe(tf);
-	env_destroy(curenv);
+    // setup stack pointer
+//    envtf->tf_esp -= 4;
+//    *(uint32_t *)envtf->tf_esp = envtf->tf_eip;
+    struct UTrapframe *utf = NULL;
+    if (envtf->tf_esp < UXSTACKTOP && envtf->tf_esp >= UXSTACKTOP - PGSIZE) {
+        // must leave empty word for recursive faults
+        utf = (struct UTrapframe *)(envtf->tf_esp - sizeof(struct UTrapframe) - 4);
+    } else {
+        // not recursive faults
+        utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
+    }
+    user_mem_assert(curenv, utf, sizeof(struct UTrapframe), PTE_W);
+    // pass struct UTrapframe as arguments
+    // fault info
+    utf->utf_fault_va = fault_va;
+    utf->utf_err = envtf->tf_err;
+    // return states
+    utf->utf_regs = envtf->tf_regs;
+    utf->utf_regs = envtf->tf_regs;
+    utf->utf_eip = envtf->tf_eip;
+    utf->utf_eflags = envtf->tf_eflags;
+    utf->utf_esp = envtf->tf_esp;
+    // new env run
+    envtf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
+    envtf->tf_esp = (uintptr_t)utf;
+    cprintf("eip 0x%lx esp 0x%lx\n", envtf->tf_esp, envtf->tf_eip);
+//    print_trapframe(envtf);
+    // run env
+    env_run(curenv);
 }
 
