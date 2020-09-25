@@ -90,7 +90,9 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	// that used the same slot in the envs[] array).
 	e = &envs[ENVX(envid)];
 	if (e->env_status == ENV_FREE || e->env_id != envid) {
-		*env_store = 0;
+        cprintf("bad env throw: is free %d, is id not matched %d, not curenv %d\n", e->env_status == ENV_FREE, e->env_id != envid, e != curenv);
+        cprintf("curenv id [%08x] this env id [%08x]\n", curenv->env_id, e->env_id);
+        *env_store = 0;
 		return -E_BAD_ENV;
 	}
 
@@ -100,6 +102,7 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	// must be either the current environment
 	// or an immediate child of the current environment.
 	if (checkperm && e != curenv && e->env_parent_id != curenv->env_id) {
+	    cprintf("bad env throw: not curenv %d, not curenv's child %d\n", e != curenv, e->env_parent_id != curenv->env_id);
 		*env_store = 0;
 		return -E_BAD_ENV;
 	}
@@ -581,7 +584,7 @@ env_free(struct Env *e)
 	e->env_pgdir = 0;
 	page_decref(pa2page(pa));
 
-	// return the environment to the free list
+    // return the environment to the free list
 	e->env_status = ENV_FREE;
 	e->env_link = env_free_list;
 	env_free_list = e;

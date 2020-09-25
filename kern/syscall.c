@@ -89,8 +89,9 @@ sys_exofork(void)
 	struct Env *newEnv;
 	// create
 	int ret = env_alloc(&newEnv, curenv->env_id);
-	if (ret < 0 || newEnv == NULL) {
+	if (ret < 0) {
 	    // falied
+	    cprintf("env_alloc failed %e\n", ret);
 	    return ret;
 	}
     // set not runnable
@@ -99,6 +100,8 @@ sys_exofork(void)
     newEnv->env_tf = curenv->env_tf;
     // set child return value 0
     newEnv->env_tf.tf_regs.reg_eax = 0;
+    // child eip not set in env_alloc, therefore must be set!
+    newEnv->env_tf.tf_eip = curenv->env_tf.tf_eip;
     return newEnv->env_id;
 }
 
@@ -168,12 +171,16 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 
 static int
 check_user_page_perm(int perm) {
-    if ((perm & (PTE_U)) != (PTE_U)) {
+    // perm -- PTE_U | PTE_P must be set, PTE_AVAIL | PTE_W may or may not be set,
+    //         but no other bits may be set.  See PTE_SYSCALL in inc/mmu.h.
+    if ((perm & PTE_U) == 0 || (perm & PTE_P) == 0) {
         // these 2 must be set
+        cprintf("No user permission or not present\n");
         return -E_INVAL;
     }
-    if ((perm | PTE_SYSCALL) != PTE_SYSCALL) {
+    if ((perm & (~PTE_SYSCALL)) != 0) {
         // others must not be set
+        cprintf("Other permissions set %x\n", perm & (~PTE_SYSCALL));
         return -E_INVAL;
     }
     return 0;
@@ -223,7 +230,8 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 //    cprintf("curenv: 0x%lx, indexed env: 0x%lx, difference: %d\n", curenv, &envs[ENVX(envid)], &envs[ENVX(envid)] - curenv);
 //    cprintf("envid: %lu, indexed env id: %lu\n", envid, envs[ENVX(envid)].env_id);
     ret = envid2env(envid, &env, 1);
-    if (ret < 0 || env == NULL) {
+    if (ret < 0) {
+        cprintf("envid [%08x] %e\n", envid, ret);
         return ret;
     }
     // check va bounary
@@ -289,24 +297,29 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	struct Env *srcenv, *dstenv;
     ret = envid2env(srcenvid, &srcenv, 1);
     if (ret < 0) {
+        cprintf("envid2env failed %e\n", ret);
         return ret;
     }
     ret = envid2env(dstenvid, &dstenv, 1);
     if (ret < 0) {
+        cprintf("envid2env failed %e\n", ret);
         return ret;
     }
     // check memory boundaries
     ret = check_va_bound_round(srcva);
     if (ret < 0) {
+        cprintf("va bound exceeds %e\n", ret);
         return ret;
     }
     ret = check_va_bound_round(dstva);
     if (ret < 0) {
+        cprintf("va bound exceeds %e\n", ret);
         return ret;
     }
     // check permissions
     ret = check_user_page_perm(perm);
     if (ret < 0) {
+        cprintf("user permissions faults %e\n", ret);
         return ret;
     }
     // check page current permission
@@ -314,12 +327,14 @@ sys_page_map(envid_t srcenvid, void *srcva,
     struct PageInfo *pp = page_lookup(srcenv->env_pgdir, srcva, &srcpte);
     if (pp == NULL) {
         // no mapping exists
+        cprintf("Page directory not exists 0x%lx\n", srcva);
         return -E_INVAL;
     }
     // check write permission
-    if (perm | PTE_W) {
+    if (perm & PTE_W) {
         // non-writable pages should not be granted write permission
         if (!(*srcpte & PTE_W)) {
+            cprintf("Page does not allow writting 0x%lx\n", srcva);
             return -E_INVAL;
         }
     }

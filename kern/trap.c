@@ -414,18 +414,17 @@ page_fault_handler(struct Trapframe *tf)
     }
      */
 
-    struct Trapframe *envtf = &curenv->env_tf;
     if (curenv->env_pgfault_upcall == NULL) {
         // no upcall
         page_fault_exit(fault_va, tf);
         return;
     }
-    if (envtf->tf_esp > USTACKTOP && envtf->tf_esp <= UXSTACKTOP - PGSIZE) {
+    if (tf->tf_esp > USTACKTOP && tf->tf_esp <= UXSTACKTOP - PGSIZE) {
         // exception stack out of space
         page_fault_exit(fault_va, tf);
         return;
     }
-    cprintf("user fault 0x%lx eip 0x%lx esp 0x%lx\n", fault_va, envtf->tf_eip, envtf->tf_esp);
+//    cprintf("user fault 0x%lx eip 0x%lx esp 0x%lx\n", fault_va, tf->tf_eip, tf->tf_esp);
 //    print_trapframe(tf);
     // setup env
 
@@ -433,28 +432,33 @@ page_fault_handler(struct Trapframe *tf)
 //    envtf->tf_esp -= 4;
 //    *(uint32_t *)envtf->tf_esp = envtf->tf_eip;
     struct UTrapframe *utf = NULL;
-    if (envtf->tf_esp < UXSTACKTOP && envtf->tf_esp >= UXSTACKTOP - PGSIZE) {
+    if (tf->tf_esp < UXSTACKTOP && tf->tf_esp >= UXSTACKTOP - PGSIZE) {
         // must leave empty word for recursive faults
-        utf = (struct UTrapframe *)(envtf->tf_esp - sizeof(struct UTrapframe) - 4);
+        utf = (struct UTrapframe *)(tf->tf_esp - sizeof(struct UTrapframe) - 4);
     } else {
         // not recursive faults
         utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
     }
+//    cprintf(" [%s, %s, %s]\n",
+//            utf->utf_err & 4 ? "user" : "kernel",
+//            utf->utf_err & 2 ? "write" : "read",
+//            utf->utf_err & 1 ? "protection" : "not-present");
+//    cprintf("user_mem_assert utf 0x%lx envid [%08x] fault_va 0x%lx %s %s %s\n", utf, curenv->env_id, fault_va, tf->tf_err & 2 ? "write" : "read", tf->tf_err & 4 ? "user" : "kernel", tf->tf_err & 1 ? "protection" : "not-present");
     user_mem_assert(curenv, utf, sizeof(struct UTrapframe), PTE_W);
     // pass struct UTrapframe as arguments
     // fault info
     utf->utf_fault_va = fault_va;
-    utf->utf_err = envtf->tf_err;
+    utf->utf_err = tf->tf_err;
     // return states
-    utf->utf_regs = envtf->tf_regs;
-    utf->utf_regs = envtf->tf_regs;
-    utf->utf_eip = envtf->tf_eip;
-    utf->utf_eflags = envtf->tf_eflags;
-    utf->utf_esp = envtf->tf_esp;
+    utf->utf_regs = tf->tf_regs;
+    utf->utf_regs = tf->tf_regs;
+    utf->utf_eip = tf->tf_eip;
+    utf->utf_eflags = tf->tf_eflags;
+    utf->utf_esp = tf->tf_esp;
     // new env run
-    envtf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
-    envtf->tf_esp = (uintptr_t)utf;
-    cprintf("eip 0x%lx esp 0x%lx\n", envtf->tf_esp, envtf->tf_eip);
+    tf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
+    tf->tf_esp = (uintptr_t)utf;
+//    cprintf("eip 0x%lx esp 0x%lx\n", tf->tf_esp, tf->tf_eip);
 //    print_trapframe(envtf);
     // run env
     env_run(curenv);

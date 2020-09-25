@@ -69,12 +69,16 @@
 // hardware, so user processes are allowed to set them arbitrarily.
 #define PTE_AVAIL	0xE00	// Available for software use
 
+// PTE_COW marks copy-on-write page table entries.
+// It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
+#define PTE_COW		0x800
+
 // Flags in PTE_SYSCALL may be used in system calls.  (Others may not.)
-#define PTE_SYSCALL	(PTE_AVAIL | PTE_P | PTE_W | PTE_U)
+#define PTE_SYSCALL	(PTE_AVAIL | PTE_P | PTE_W | PTE_U | PTE_COW)
 
 // Address in page table or page directory entry
-#define PTE_ADDR(pte)	((physaddr_t) (pte) & ~0xFFF)
-//#define PTE_PERM(pte)   ((physaddr_t) (pte) & 0xFFF)
+#define PTE_ADDR(pte)	((physaddr_t) (pte) & (~0xFFF))
+#define PTE_PERM(pte)   ((pte) & 0xFFF)
 
 // Control Register flags
 #define CR0_PE		0x00000001	// Protection Enable

@@ -32,12 +32,12 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 		// panic("set_pgfault_handler not implemented");
 
 		// allocate an exception stack
-        ret = sys_page_alloc(thisenv->env_id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W);
+        ret = sys_page_alloc(thisenv->env_id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);
         if (ret < 0) {
             panic("Allocate user exception stack failed!\n");
         }
+        sys_env_set_pgfault_upcall(0, _pgfault_upcall);
     }
-    sys_env_set_pgfault_upcall(thisenv->env_id, _pgfault_upcall);
 
 	// Save handler pointer for assembly to call.
 	_pgfault_handler = handler;
