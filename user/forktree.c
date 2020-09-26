@@ -17,7 +17,6 @@ forkchild(const char *cur, char branch)
 	snprintf(nxt, DEPTH+1, "%s%c", cur, branch);
 	int forkret = fork();
 	if (forkret == 0) {
-	    cprintf("forkret %d\n", forkret);
 		forktree(nxt);
 		exit();
 	}

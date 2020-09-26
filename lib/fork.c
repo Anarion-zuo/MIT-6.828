@@ -30,6 +30,7 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
+	/*
     cprintf("[%08x] real pgfault handler [%s, %s, %s] at addr 0x%lx eip 0x%lx\n",
             thisenv->env_id,
             err & 4 ? "user" : "kernel",
@@ -37,6 +38,7 @@ pgfault(struct UTrapframe *utf)
             err & 1 ? "protection" : "not-present",
             addr,
             utf->utf_eip);
+            */
 	if ((err & FEC_WR) == 0) {
         // not caused by write
         panic("User page fault not caused by writing!\n");
@@ -175,11 +177,11 @@ fork(void)
 	    // child process
 	    envid_t childid = sys_getenvid();
 	    thisenv = &envs[ENVX(childid)];
-	    cprintf("child envid [%08x]\n", childid);
+//	    cprintf("child envid [%08x]\n", childid);
 	    // this return is for the child
 	    return 0;
 	}
-    cprintf("parent envid [%08x] child envid [%08x]\n", thisenv->env_id, newid);
+//    cprintf("parent envid [%08x] child envid [%08x]\n", thisenv->env_id, newid);
     // parent process
     if (newid < 0) {
         panic("exofork failed %e\n", newid);

@@ -58,12 +58,25 @@ static const char *trapname(int trapno)
 		"SIMD Floating-Point Exception"
 	};
 
+    static const char * const irqnames[] = {
+            "Hardware Interrupt Timer",
+            "Hardware Interrupt KBD",
+            "","",
+            "Hardware Interrupt Serial",
+            "", "",
+            "Hardware Interrupt Spurious",
+            "", "", "", "", "", "",
+            "Hardware Interrupt IDE",
+            "", "", "", "",
+            "Hardware Interrupt ERROR",
+    };
+
 	if (trapno < ARRAY_SIZE(excnames))
 		return excnames[trapno];
 	if (trapno == T_SYSCALL)
 		return "System call";
 	if (trapno >= IRQ_OFFSET && trapno < IRQ_OFFSET + 16)
-		return "Hardware Interrupt";
+		return irqnames[trapno - IRQ_OFFSET];
 	return "(unknown trap)";
 }
 
@@ -74,6 +87,10 @@ static const char *trapname(int trapno)
 #define DECLARE_INTENTRY(funcName, intNumber, privLevel) \
     void funcName();                \
     SETGATE(idt[intNumber], 0, GD_KT, funcName, privLevel)
+
+static bool is_irq(uint32_t trapno) {
+    return trapno >= IRQ_OFFSET && trapno < IRQ_OFFSET + 16;
+}
 
 void
 trap_init(void)
@@ -110,6 +127,13 @@ trap_init(void)
     DECLARE_INTENTRY(t_simderr, T_SIMDERR, 0)
 
     DECLARE_TRAPENTRY(t_syscall, T_SYSCALL, 3)
+
+    DECLARE_INTENTRY(irq_timer, IRQ_TIMER + IRQ_OFFSET, 3)
+    DECLARE_INTENTRY(irq_kbd, IRQ_KBD + IRQ_OFFSET, 3)
+    DECLARE_INTENTRY(irq_serial, IRQ_SERIAL + IRQ_OFFSET, 3)
+    DECLARE_INTENTRY(irq_spurious, IRQ_SPURIOUS + IRQ_OFFSET, 3)
+    DECLARE_INTENTRY(irq_ide, IRQ_IDE + IRQ_OFFSET, 3)
+    DECLARE_INTENTRY(irq_error, IRQ_ERROR + IRQ_OFFSET, 3)
 
     // Per-CPU setup
 	trap_init_percpu();
@@ -227,12 +251,49 @@ static void handle_syscall(struct Trapframe *tf) {
     pushRegs->reg_eax = syscall(pushRegs->reg_eax, pushRegs->reg_edx, pushRegs->reg_ecx, pushRegs->reg_ebx, pushRegs->reg_edi, pushRegs->reg_esi);
 }
 
+static void irq_dispatch(struct Trapframe *tf, uint32_t irqno) {
+    switch (irqno) {
+        case IRQ_TIMER:
+            // Handle clock interrupts. Don't forget to acknowledge the
+            // interrupt using lapic_eoi() before calling the scheduler!
+            // LAB 4: Your code here.
+            cprintf("Timer Interrupt\n");
+            lapic_eoi();
+            sched_yield();
+            break;
+        case IRQ_SPURIOUS:
+            // Handle spurious interrupts
+            // The hardware sometimes raises these because of noise on the
+            // IRQ line or other reasons. We don't care.
+            cprintf("Spurious interrupt on irq 7\n");
+            print_trapframe(tf);
+            return;
+        default:
+            print_trapframe(tf);
+            if (tf->tf_cs == GD_KT)
+                panic("unhandled trap in kernel");
+            else {
+                env_destroy(curenv);
+                return;
+            }
+    }
+}
+
+static void
+trap_exit() {
+    if (curenv && curenv->env_status == ENV_RUNNING)
+        env_run(curenv);
+    else
+        sched_yield();
+}
+
 static void
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
-    switch (tf->tf_trapno) {
+    uint32_t trapno = tf->tf_trapno;
+    switch (trapno) {
         case T_DIVIDE:
             //return;
             break;
@@ -253,18 +314,12 @@ trap_dispatch(struct Trapframe *tf)
             break;
     }
 
-	// Handle spurious interrupts
-	// The hardware sometimes raises these because of noise on the
-	// IRQ line or other reasons. We don't care.
-	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SPURIOUS) {
-		cprintf("Spurious interrupt on irq 7\n");
-		print_trapframe(tf);
-		return;
-	}
-
-	// Handle clock interrupts. Don't forget to acknowledge the
-	// interrupt using lapic_eoi() before calling the scheduler!
-	// LAB 4: Your code here.
+    if (is_irq(trapno)) {
+        if ((tf->tf_cs & 3) == 3) {
+            irq_dispatch(tf, trapno - IRQ_OFFSET);
+        }
+        return;
+    }
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
@@ -295,7 +350,33 @@ trap(struct Trapframe *tf)
 	// Check that interrupts are disabled.  If this assertion
 	// fails, DO NOT be tempted to fix it by inserting a "cli" in
 	// the interrupt path.
-	assert(!(read_eflags() & FL_IF));
+    // assert(!(read_eflags() & FL_IF));
+    uint32_t eflags = read_eflags();
+    if (!(eflags & FL_IF)) {
+        if ((tf->tf_cs & 3) == 3) {
+            // user mode enables interrupt
+        } else {
+            // kernel mode ignores interrupt
+            trap_exit();
+        }
+	}
+	/*
+	if (!(read_eflags() & FL_IF)) {
+
+	    if ((tf->tf_cs & 3) != 3) {
+	        // irq from kernel
+	        print_trapframe(tf);
+	        panic("IRQ in kernel\n");
+	    }
+
+	    if (tf->tf_trapno >= IRQ_OFFSET) {
+	        asm volatile("cld\n");
+	    }
+
+	    print_trapframe(tf);
+	}
+	 */
+//	 print_trapframe(tf); cprintf("\n");
 
 	if ((tf->tf_cs & 3) == 3) {
 		// Trapped from user mode.
@@ -332,10 +413,7 @@ trap(struct Trapframe *tf)
 	// If we made it to this point, then no other environment was
 	// scheduled, so we should return to the current environment
 	// if doing so makes sense.
-	if (curenv && curenv->env_status == ENV_RUNNING)
-		env_run(curenv);
-	else
-		sched_yield();
+	trap_exit();
 }
 
 static int va_in_exceptionstack(void *va) {
