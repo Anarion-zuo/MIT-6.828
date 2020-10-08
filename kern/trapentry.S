@@ -132,3 +132,24 @@ _alltraps:
     call trap
     # leaving function
     # pop %ebp
+
+/*
+.globl _trapexit_kernel
+.type _trapexit_kernel, @function
+_trapexit_kernel:
+    movl (%esp), %esp
+
+    # restore trap-time registers
+    # no modifications on general registers from here
+    popal
+
+    # restore eflags
+    # no arithmetic operations from here
+    popf
+
+    # restore stack
+	movl (%esp), %esp
+
+    # call return
+    ret
+*/

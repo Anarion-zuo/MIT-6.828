@@ -676,6 +676,7 @@ env_run(struct Env *e)
     curenv = e;
     curenv->env_status = ENV_RUNNING;
 	++curenv->env_runs;
+//	cprintf("[kernel] CPU %d running user envid %08x\n", thiscpu->cpu_id, curenv->env_id);
 	// change of page directory should be in env_pop_tf
     lcr3(PADDR(curenv->env_pgdir));
     // Step 2

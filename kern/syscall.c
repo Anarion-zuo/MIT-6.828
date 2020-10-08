@@ -53,9 +53,11 @@ sys_env_destroy(envid_t envid)
 	int r;
 	struct Env *e;
 
+
 	if ((r = envid2env(envid, &e, 1)) < 0)
 		return r;
-	if (e == curenv)
+//    cprintf("[kernel] CPU %d destroying envid %08x by the request of envid %08x, is curenv %s\n", thiscpu->cpu_id, envid, curenv->env_id, envid == curenv->env_id ? "true" : "false");
+    if (e == curenv)
 		cprintf("[%08x] exiting gracefully\n", curenv->env_id);
 	else
 		cprintf("[%08x] destroying %08x\n", curenv->env_id, e->env_id);
@@ -422,7 +424,13 @@ static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_try_send not implemented");
+	// panic("sys_ipc_try_send not implemented");
+	int ret;
+	struct Env *dstenv;
+	ret = envid2env(envid, &dstenv, 0);
+	if (ret < 0) {
+	    return ret;
+	}
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -444,6 +452,33 @@ sys_ipc_recv(void *dstva)
 	return 0;
 }
 
+static const char *syscall_name(uint32_t syscallno) {
+    switch (syscallno) {
+        case SYS_cputs:
+            return "cputs";
+        case SYS_getenvid:
+            return "getenvid";
+        case SYS_env_destroy:
+            return "env_destroy";
+        case SYS_yield:
+            return "yield";
+        case SYS_exofork:
+            return "exofork";
+        case SYS_env_set_status:
+            return "env_set_status";
+        case SYS_page_alloc:
+            return "page_alloc";
+        case SYS_page_map:
+            return "page_map";
+        case SYS_page_unmap:
+            return "page_unmap";
+        case SYS_env_set_pgfault_upcall:
+            return "env_set_pgfault_upcall";
+        default:
+            return "invalid_syscall";
+    }
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -453,7 +488,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// LAB 3: Your code here.
 
 //	panic("syscall not implemented");
-
+//    cprintf("[kernel] system call %d %s from envid %d \n", syscallno, syscall_name(syscallno), curenv->env_id);
 	switch (syscallno) {
         case SYS_cputs:
             sys_cputs((const char *)a1, a2);
@@ -461,7 +496,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
         case SYS_getenvid:
             return sys_getenvid();
         case SYS_env_destroy:
-            return sys_env_destroy(sys_getenvid());
+            return sys_env_destroy(a1);
 	    case SYS_yield:
             sched_yield();
 	        return 0;

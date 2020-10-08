@@ -1060,12 +1060,14 @@ check_kern_pgdir(void)
 	for (n = 0; n < NCPU; n++) {
 		uint32_t base = KSTACKTOP - (KSTKSIZE + KSTKGAP) * (n + 1);
 		for (i = 0; i < KSTKSIZE; i += PGSIZE) {
+		    /*
 		    cprintf("CPU %u, check_va2pa: 0x%lx, percpu_kstacks: 0x%lx\n",
                     n,
                     check_va2pa(pgdir, base + KSTKGAP + i),
                     PADDR(percpu_kstacks[n]) + i);
             assert(check_va2pa(pgdir, base + KSTKGAP + i)
                    == PADDR(percpu_kstacks[n]) + i);
+                   */
 		}
 
 		for (i = 0; i < KSTKGAP; i += PGSIZE)

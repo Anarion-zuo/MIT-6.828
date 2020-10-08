@@ -86,6 +86,13 @@ struct UTrapframe {
 	uintptr_t utf_esp;
 } __attribute__((packed));
 
+struct KTrapframe {
+    struct PushRegs ktf_regs;
+    uint32_t ktf_eflags;
+    uintptr_t ktf_esp;
+    uintptr_t ktf_eip;
+} __attribute__((packed));
+
 #endif /* !__ASSEMBLER__ */
 
 #endif /* !JOS_INC_TRAP_H */

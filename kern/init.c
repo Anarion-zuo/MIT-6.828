@@ -53,7 +53,7 @@ i386_init(void)
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 #else
 	// Schedule and run the first user environment!
-    ENV_CREATE(user_forktree, ENV_TYPE_USER);
+    ENV_CREATE(user_stresssched, ENV_TYPE_USER);
 #endif // TEST*
     sched_yield();
 
@@ -119,7 +119,7 @@ mp_main(void)
 	sched_yield();
 
 	// Remove this after you finish Exercise 6
-	for (;;);
+	//for (;;);
 }
 
 /*
@@ -127,6 +127,8 @@ mp_main(void)
  * to indicate that the kernel has already called panic.
  */
 const char *panicstr;
+extern void lock_print();
+extern void unlock_print();
 
 /*
  * Panic is called on unresolvable fatal errors.
@@ -146,7 +148,9 @@ _panic(const char *file, int line, const char *fmt,...)
 
 	va_start(ap, fmt);
 	cprintf("kernel panic on CPU %d at %s:%d: ", cpunum(), file, line);
+	lock_print();
 	vcprintf(fmt, ap);
+	unlock_print();
 	cprintf("\n");
 	va_end(ap);
 
