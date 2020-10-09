@@ -23,8 +23,34 @@ int32_t
 ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 {
 	// LAB 4: Your code here.
-	panic("ipc_recv not implemented");
-	return 0;
+	//panic("ipc_recv not implemented");
+
+	int ret;
+	if (pg == NULL) {
+	    pg = (void *)UTOP;
+	}
+    ret = sys_ipc_recv(pg);
+//    cprintf("[user] user %08x received value %u at page va 0x%lx from user %08x\n", thisenv->env_id, thisenv->env_ipc_value, pg, thisenv->env_ipc_from);
+    if (ret < 0) {
+        // store
+        if (from_env_store) {
+            *from_env_store = 0;
+        }
+        if (perm_store) {
+            *perm_store = 0;
+        }
+	    return ret;
+	}
+
+	// store
+	if (from_env_store) {
+	    *from_env_store = thisenv->env_ipc_from;
+	}
+	if (perm_store) {
+	    *perm_store = thisenv->env_ipc_perm;
+	}
+
+    return thisenv->env_ipc_value;
 }
 
 // Send 'val' (and 'pg' with 'perm', if 'pg' is nonnull) to 'toenv'.
@@ -39,7 +65,27 @@ void
 ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 {
 	// LAB 4: Your code here.
-	panic("ipc_send not implemented");
+	// panic("ipc_send not implemented");
+
+	int ret;
+	if (pg == NULL) {
+	    perm = 0;
+	} else {
+	    perm |= PTE_P;
+	}
+
+	// try indefinitely
+	while (1) {
+	    ret = sys_ipc_try_send(to_env, val, pg, perm);
+	    if (ret < 0) {
+	        if (ret != -E_IPC_NOT_RECV) {
+	            panic("User env %08x ipc try send: %e\n", thisenv->env_id, ret);
+	        }
+	        // continue trying
+	    } else {
+	        break;
+	    }
+    }
 }
 
 // Find the first environment of the given type.  We'll use this to

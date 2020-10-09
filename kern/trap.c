@@ -110,7 +110,7 @@ trap_init(void)
     DECLARE_INTENTRY(t_divide, T_DIVIDE, 0)
     DECLARE_INTENTRY(t_debug, T_DEBUG, 3)
     DECLARE_INTENTRY(t_nmi, T_NMI, 0)
-    DECLARE_TRAPENTRY(t_brkpt, T_BRKPT, 3)
+    DECLARE_INTENTRY(t_brkpt, T_BRKPT, 3)
     DECLARE_INTENTRY(t_oflow, T_OFLOW, 0)
     DECLARE_INTENTRY(t_bound, T_BOUND, 0)
     DECLARE_INTENTRY(t_illop, T_ILLOP, 0)
@@ -238,7 +238,10 @@ static void handle_divzero() {
 //    cprintf("exception: divide by zero encoutered.\n");
 }
 
+extern int print_backtrace(uint32_t ebp);
+
 static void debug_breakpoint_handler(struct Trapframe *tf) {
+    print_backtrace(tf->tf_regs.reg_ebp);
 //    print_trapframe(tf);
 //    cprintf("Breakpoint at:\n");
 //    monitor_welcome();

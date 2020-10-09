@@ -310,12 +310,12 @@ sys_page_map(envid_t srcenvid, void *srcva,
     // check memory boundaries
     ret = check_va_bound_round(srcva);
     if (ret < 0) {
-        cprintf("va bound exceeds %e\n", ret);
+        cprintf("va bound exceeds by 0x%lx: %e\n", srcva, ret);
         return ret;
     }
     ret = check_va_bound_round(dstva);
     if (ret < 0) {
-        cprintf("va bound exceeds %e\n", ret);
+        cprintf("va bound exceeds by 0x%lx: %e\n", dstva, ret);
         return ret;
     }
     // check permissions
@@ -426,11 +426,76 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 	// LAB 4: Your code here.
 	// panic("sys_ipc_try_send not implemented");
 	int ret;
+	// fetch dst env
 	struct Env *dstenv;
 	ret = envid2env(envid, &dstenv, 0);
 	if (ret < 0) {
 	    return ret;
 	}
+	// check if target is waiting
+	if (dstenv->env_ipc_recving == 0) {
+	    // target not receiving ipc
+	    return -E_IPC_NOT_RECV;
+	}
+//    cprintf("[kernel] user %08x trying to send ipc to user %08x value %lu va 0x%lx perm %u\n", curenv->env_id, envid, value, srcva, perm);
+// target is waiting
+    // check whether needs to send the page
+	if ((uint32_t)dstenv->env_ipc_dstva >= UTOP) {
+	    // unwilling to receive a page
+	    perm = 0;
+	}
+    if ((uint32_t)srcva >= UTOP) {
+        // does not send a page
+        perm = 0;
+    }
+	// no changes made on dstenv so far
+
+	// try send a page first
+	if (perm) {
+	    perm |= PTE_P;
+	    // send a page
+        if ((uint32_t)srcva % PGSIZE != 0) {
+            return -E_INVAL;
+        }
+        // check permission itself
+        ret = check_user_page_perm(perm);
+        if (ret < 0) {
+            return ret;
+        }
+        // check page permissions on this env
+        pte_t *srcpte;
+        struct PageInfo *pp = page_lookup(curenv->env_pgdir, srcva, &srcpte);
+        if (pp == NULL) {
+            // no mapping exists
+            return -E_INVAL;
+        }
+        if ((perm & PTE_W) == PTE_W && (*srcpte & PTE_W) != PTE_W) {
+            // no write permission
+            return -E_INVAL;
+        }
+        // make mapping
+        ret = page_insert(dstenv->env_pgdir, pp, dstenv->env_ipc_dstva, perm);
+        if (ret < 0) {
+            return ret;
+        }
+        // no changes made on dstenv so far
+        dstenv->env_ipc_perm = perm;
+	} else {
+	    // not sending a page
+	    dstenv->env_ipc_perm = 0;
+	}
+	// all error returns above do not change current states on both sides
+    // send value
+    dstenv->env_ipc_from = curenv->env_id;
+    dstenv->env_ipc_value = value;
+    // mark runnable
+    dstenv->env_status = ENV_RUNNABLE;
+    // reject further sendings
+    dstenv->env_ipc_recving = 0;
+    // setup dstenv return state
+    dstenv->env_tf.tf_regs.reg_eax = 0;
+
+    return 0;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -448,35 +513,27 @@ static int
 sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_recv not implemented");
-	return 0;
-}
+	// panic("sys_ipc_recv not implemented");
+	// setup waiting state
+	if ((uint32_t)dstva < UTOP) {
+        curenv->env_ipc_dstva = dstva;
+        if ((uint32_t)dstva % PGSIZE) {
+            // not aligned
+            return -E_INVAL;
+        }
+    } else {
+	    // reject page transfer
+	    curenv->env_ipc_dstva = (void *)UTOP;
+	}
+	curenv->env_status = ENV_NOT_RUNNABLE;
+    curenv->env_ipc_recving = 1;
 
-static const char *syscall_name(uint32_t syscallno) {
-    switch (syscallno) {
-        case SYS_cputs:
-            return "cputs";
-        case SYS_getenvid:
-            return "getenvid";
-        case SYS_env_destroy:
-            return "env_destroy";
-        case SYS_yield:
-            return "yield";
-        case SYS_exofork:
-            return "exofork";
-        case SYS_env_set_status:
-            return "env_set_status";
-        case SYS_page_alloc:
-            return "page_alloc";
-        case SYS_page_map:
-            return "page_map";
-        case SYS_page_unmap:
-            return "page_unmap";
-        case SYS_env_set_pgfault_upcall:
-            return "env_set_pgfault_upcall";
-        default:
-            return "invalid_syscall";
-    }
+//    cprintf("[ipc] CPU %d waiting on ipc\n", thiscpu->cpu_id);
+    sched_yield();
+
+	// unreachable code
+
+	return 0;
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
@@ -513,6 +570,11 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             return sys_page_unmap(a1, (void *)a2);
 	    case SYS_env_set_pgfault_upcall:
 	        return sys_env_set_pgfault_upcall(a1, (void *)a2);
+
+	    case SYS_ipc_try_send:
+	        return sys_ipc_try_send(a1, a2, (void *)a3, a4);
+	    case SYS_ipc_recv:
+            return sys_ipc_recv((void *)a1);
 
         case NSYSCALLS:
         default:

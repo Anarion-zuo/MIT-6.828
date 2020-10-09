@@ -11,11 +11,11 @@ static struct spinlock printLock = {
 };
 
 void lock_print() {
-//    spin_lock(&printLock);
+    spin_lock(&printLock);
 }
 
 void unlock_print() {
-//    spin_unlock(&printLock);
+    spin_unlock(&printLock);
 }
 
 static void

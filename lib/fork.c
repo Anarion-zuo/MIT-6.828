@@ -41,7 +41,7 @@ pgfault(struct UTrapframe *utf)
             */
 	if ((err & FEC_WR) == 0) {
         // not caused by write
-        panic("User page fault not caused by writing!\n");
+        panic("User page fault at address 0x%lx eip 0x%lx not caused by writing!\n", addr, utf->utf_eip);
 	}
 	pte_t pte = getpte(addr);
 	if (pte == 0) {
