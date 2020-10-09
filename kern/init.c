@@ -53,7 +53,7 @@ i386_init(void)
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 #else
 	// Schedule and run the first user environment!
-    ENV_CREATE(user_stresssched, ENV_TYPE_USER);
+    ENV_CREATE(user_primes, ENV_TYPE_USER);
 #endif // TEST*
     sched_yield();
 
@@ -134,6 +134,7 @@ extern void unlock_print();
  * Panic is called on unresolvable fatal errors.
  * It prints "panic: mesg", and then enters the kernel monitor.
  */
+extern int print_backtrace(uint32_t ebp);
 void
 _panic(const char *file, int line, const char *fmt,...)
 {
@@ -153,6 +154,7 @@ _panic(const char *file, int line, const char *fmt,...)
 	unlock_print();
 	cprintf("\n");
 	va_end(ap);
+    print_backtrace(read_ebp());
 
 dead:
 	/* break into the kernel monitor */

@@ -69,7 +69,7 @@ print_curtrace(uint32_t ebp, uint32_t eip) {
     return ret;
 }
 
-static int
+int
 print_backtrace(uint32_t ebp) {
     int *ebp_base_ptr = (int *)ebp;           // extract stack base
     uint32_t eip = ebp_base_ptr[1];   // extract just above this stack
