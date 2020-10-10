@@ -10,10 +10,15 @@ umain(int argc, char **argv)
 	envid_t parent = sys_getenvid();
 
 	// Fork several environments
-	for (i = 0; i < 20; i++)
-		if (fork() == 0)
-			break;
+	for (i = 0; i < 20; i++) {
+	    cprintf("I am parent. Forking new env for the %dth time\n", i);
+        envid_t newid = fork();
+        if (newid == 0)
+            break;
+        cprintf("I am parent. A new env %d forked...\n", newid);
+	}
 	if (i == 20) {
+	    cprintf("I am %08x, yielding...\n", thisenv->env_id);
 		sys_yield();
 		return;
 	}
@@ -21,6 +26,7 @@ umain(int argc, char **argv)
 	// Wait for the parent to finish forking
 	while (envs[ENVX(parent)].env_status != ENV_FREE)
 		asm volatile("pause");
+	cprintf("I am child %08x, parent has exited...\n", thisenv->env_id);
 
 	// Check that one environment doesn't run on two CPUs at once
 	for (i = 0; i < 10; i++) {

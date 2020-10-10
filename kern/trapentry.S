@@ -43,14 +43,113 @@
 	jmp _alltraps
 
 .text
-
 /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
+    // this forms
+    TRAPHANDLER_NOEC(t_divide, T_DIVIDE)
+    TRAPHANDLER_NOEC(t_debug, T_DEBUG)
+    TRAPHANDLER_NOEC(t_nmi, T_NMI)
+    TRAPHANDLER_NOEC(t_brkpt, T_BRKPT)
+    TRAPHANDLER_NOEC(t_oflow, T_OFLOW)
+    TRAPHANDLER_NOEC(t_bound, T_BOUND)
+    TRAPHANDLER_NOEC(t_illop, T_ILLOP)
+    TRAPHANDLER_NOEC(t_device, T_DEVICE)
+    TRAPHANDLER(t_dblflt, T_DBLFLT)
+    TRAPHANDLER(t_tss, T_TSS)
+    TRAPHANDLER(t_segnp, T_SEGNP)
+    TRAPHANDLER(t_stack, T_STACK)
+    TRAPHANDLER(t_gpflt, T_GPFLT)
+    TRAPHANDLER(t_pgflt, T_PGFLT)
+    TRAPHANDLER(t_fperr, T_FPERR)
+    TRAPHANDLER(t_align, T_ALIGN)
+    TRAPHANDLER(t_mchk, T_MCHK)
+    TRAPHANDLER(t_simderr, T_SIMDERR)
 
+    TRAPHANDLER_NOEC(t_syscall, T_SYSCALL)
+
+    TRAPHANDLER_NOEC(irq_timer, IRQ_TIMER + IRQ_OFFSET)
+    TRAPHANDLER_NOEC(irq_kbd, IRQ_KBD + IRQ_OFFSET)
+    TRAPHANDLER_NOEC(irq_serial, IRQ_SERIAL + IRQ_OFFSET)
+    TRAPHANDLER_NOEC(irq_spurious, IRQ_SPURIOUS + IRQ_OFFSET)
+    TRAPHANDLER_NOEC(irq_ide, IRQ_IDE + IRQ_OFFSET)
+    TRAPHANDLER_NOEC(irq_error, IRQ_ERROR + IRQ_OFFSET)
 
 
 /*
  * Lab 3: Your code here for _alltraps
  */
+_alltraps:
+    # entering function
+    # pushl %ebp
+    # mov %esp, %ebp
 
+    # push trap frame
+/*
+    # stack grows downwards, therefore pushing should be in reverse declaration order
+    xor %ebx, %ebx
+    # uint16_t tf_padding4
+    pushw %bx
+    # uint16_t tf_ss
+    pushw %ss
+    # uintptr_t tf_esp
+    pushl %esp
+    # uint32_t tf_eflags
+    pushl %ebx
+    # uint16_t tf_padding3
+    pushw %bx
+    # uint16_t tf_cs
+    pushw %cs
+    # uintptr_t tf_eip
+    pushl %ebx
+    # uint32_t tf_err
+    pushl 0x8(%ebp)
+    # uint32_t tf_trapno
+    pushl 0x4(%ebp)
+    # uint16_t tf_padding2
+    pushw %bx
+    # uint16_t tf_ds
+    pushw $(GD_KD)
+    # uint16_t tf_padding1
+    pushw %bx
+    # uint16_t tf_es
+    pushw $(GD_KD)
+*/
+    # struct PushRegs tf_regs
+    # struct PushRegs is in reverse order declared
+
+    pushl %ds
+    pushl %es
+
+    pushal
+    # load GD_KD into %ds, %es
+    movw $(GD_KD), %ax
+    movw %ax, %ds
+    movw %ax, %es
+    # pass a pointer to the trap frame for function trap
+    pushl %esp
+
+    call trap
+    # leaving function
+    # pop %ebp
+
+/*
+.globl _trapexit_kernel
+.type _trapexit_kernel, @function
+_trapexit_kernel:
+    movl (%esp), %esp
+
+    # restore trap-time registers
+    # no modifications on general registers from here
+    popal
+
+    # restore eflags
+    # no arithmetic operations from here
+    popf
+
+    # restore stack
+	movl (%esp), %esp
+
+    # call return
+    ret
+*/

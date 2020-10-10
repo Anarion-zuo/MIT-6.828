@@ -90,7 +90,9 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	// that used the same slot in the envs[] array).
 	e = &envs[ENVX(envid)];
 	if (e->env_status == ENV_FREE || e->env_id != envid) {
-		*env_store = 0;
+        cprintf("bad env throw: is free %d, is id not matched %d, not curenv %d\n", e->env_status == ENV_FREE, e->env_id != envid, e != curenv);
+        cprintf("curenv id [%08x] this env id [%08x]\n", curenv->env_id, e->env_id);
+        *env_store = 0;
 		return -E_BAD_ENV;
 	}
 
@@ -100,6 +102,7 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	// must be either the current environment
 	// or an immediate child of the current environment.
 	if (checkperm && e != curenv && e->env_parent_id != curenv->env_id) {
+	    cprintf("bad env throw: not curenv %d, not curenv's child %d\n", e != curenv, e->env_parent_id != curenv->env_id);
 		*env_store = 0;
 		return -E_BAD_ENV;
 	}
@@ -119,6 +122,19 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
+	// initialize to be 0
+	memset(envs, 0, NENV * sizeof(struct Env));
+	// make the linked list
+	// not setting the last element, therefore default to NULL by memset
+	for (size_t i = 0; i < NENV - 1; ++i) {
+	    envs[i].env_status = ENV_FREE;
+	    envs[i].env_id = 0;
+	    envs[i].env_link = &envs[i + 1];
+	}
+	envs[NENV - 1].env_link = NULL;
+	// set linked list head
+	env_free_list = envs;
+	// free list setup done
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -182,7 +198,37 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
+    // memset(page2kva(p), 0, PGSIZE);   // no need to zero the page
+    // use kernel page as template
+    // can conveniently replace some of the entries, for the pages are marked not referenced
+    pde_t *upgdir = page2kva(p);
+    memcpy(upgdir, kern_pgdir, PGSIZE);
+    // must increment env_pgdir's reference count according to Hint
+    p->pp_ref++;
+    // setup Env structure
+    e->env_pgdir = upgdir;
+    // set page directory entries to user accessible
+//    for (pde_t *pde = upgdir; pde < (pde_t*)((uintptr_t)upgdir + PGSIZE); ++pde) {
+//        // cprintf("pde at %u user permission %u\n", pde - e->env_pgdir, *pde & PTE_U);
+//        *pde |= PTE_U | PTE_W;
+//    }
+    /*for (pde_t *pde = upgdir; pde < (pde_t*)((uintptr_t)upgdir + PGSIZE); ++pde) {
+        cprintf("pde at %u user permission %u\n", pde - e->env_pgdir, *pde & PTE_U);
+    }*/
+    /*
+    // insert mappings below UTOP
+    // user exception stack
+    page_insert(page2kva(p), pa2page(UTOP - PGSIZE), UTOP - PGSIZE, PTE_U | PTE_W);
+    pa2page(UTOP - PGSIZE)->pp_ref++;
+    // preserved empty memory just above USTACKTOP
+    // normal user stack
+    for (void *pa = UTEXT; pa < USTACKTOP; pa += PGSIZE) {
+        page_insert(page2kva(p), pa2page(pa), pa, PTE_U | PTE_W);
+        // must increment reference count for mappings below UTOP
+        pa2page(pa)->pp_ref++;
+    }
 
+    */
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
@@ -247,6 +293,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 
 	// Enable interrupts while in user mode.
 	// LAB 4: Your code here.
+	e->env_tf.tf_eflags |= FL_IF;
 
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;
@@ -279,6 +326,26 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+	if ((uintptr_t)va >= UTOP) {
+	    panic("region_alloc: Mapping virtual address above UTOP for user environment...\n");
+	}
+	void *rva = ROUNDDOWN(va, PGSIZE);
+	void *rva_end = ROUNDUP(va + len, PGSIZE);
+	// corner case: rva_end overflows
+	if (rva > rva_end) {
+	    panic("region_alloc: requesting length too large.\n");
+	}
+	for (; rva < rva_end; rva += PGSIZE) {
+	    struct PageInfo *pp = page_alloc(0);
+	    if (pp == NULL) {
+	        panic("region_alloc: Allocation for user environment page failed...\n");
+	    }
+	    // ++pp->pp_ref;
+	    int ret = page_insert(e->env_pgdir, pp, rva, PTE_W | PTE_U);
+	    if (ret < 0) {
+	        panic("region_alloc: %e\n", ret);
+	    }
+	}
 }
 
 //
@@ -303,6 +370,48 @@ region_alloc(struct Env *e, void *va, size_t len)
 // load_icode panics if it encounters problems.
 //  - How might load_icode fail?  What might be wrong with the given input?
 //
+/*
+ * These are 2 helper functions not in the original code.
+ *
+ * memcpy_pgdir copies data from the source pointer src to another virtual address, but with a different page directory.
+ * The memory must be divided into chunks in order to deal with unknown mappings.
+ * The mappings used by the function are assumed to be set and valid for address translation, or the function causes mysterious bugs.
+ *
+ * memset_pgdir does essentially the same thing, but setting all memory entries to the same value, usually 0.
+ * All else is the same.
+ *
+ * These functions work between the kernel address space and the specified address space, determined at runtime.
+ */
+static void memcpy_pgdir(pde_t *pgdir, void *va_begin, void *src, size_t copyingSize) {
+    size_t binaryOffset = 0;
+    void *va = va_begin;
+    while (copyingSize > 0) {
+        struct PageInfo *pageInfo = page_lookup(pgdir, va, NULL);
+        size_t pgoff = PGOFF(va);
+        size_t step = PGSIZE - pgoff;
+        if (step > copyingSize) {
+            step = copyingSize;
+        }
+        memcpy(page2kva(pageInfo) + pgoff, src + binaryOffset, step);
+        copyingSize -= step;
+        binaryOffset += step;
+        va += step;
+    }
+}
+static void memset_pgdir(pde_t *pgdir, void *va_begin, size_t settingSize, int c) {
+    void *va = va_begin;
+    while (settingSize > 0) {
+        struct PageInfo *pageInfo = page_lookup(pgdir, va, NULL);
+        size_t pgoff = PGOFF(va);
+        size_t step = PGSIZE - pgoff;
+        if (step > settingSize) {
+            step = settingSize;
+        }
+        memset(page2kva(pageInfo) + pgoff, c, step);
+        settingSize -= step;
+        va += step;
+    }
+}
 static void
 load_icode(struct Env *e, uint8_t *binary)
 {
@@ -335,11 +444,80 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
+	struct Elf *elfHeader = (struct Elf *)binary;
+	if (elfHeader->e_magic != ELF_MAGIC) {
+	    panic("Elf binary sequence not valid at header magic number...\n");
+	}
+	// load each segment
+	struct Proghdr *ph = (struct Proghdr *)(binary + elfHeader->e_phoff), *phEnd = ph + elfHeader->e_phnum;
+	// this code tries to do address translation by hand
+	/*
+	for (; ph < phEnd; ++ph) {
+	    if (ph->p_type != ELF_PROG_LOAD) {
+	        // does not load this type according to Hints
+            continue;
+	    }
+	    // read information on mapping
+	    void *va = (void *)ph->p_va;
+	    uint32_t memsz = ph->p_memsz, filesz = ph->p_filesz;
+	    if (memsz < filesz) {
+	        panic("ELF size in memory less than size in file...\n");
+	    }
+	    // make mappings
+	    if ((uint32_t)va == 0x800020) {
+            region_alloc(e, va, memsz);
+            cprintf("entry found 0x%lx\n", va);
+            cprintf("code memsz %u, filesz %u\n", memsz, filesz);
+            cprintf("page directory index %u\n", PDX(0x800020));
+            cprintf("page directory present %u after allocation...\n", e->env_pgdir[PDX(0x800020)] & PTE_P);
+        } else {
+            region_alloc(e, va, memsz);
+        }
+
+	    // The current state uses not the page directory of the building environment, therefore must be dealt with caution.
+	    // These 2 functions are for cross-pgdir memory copying & setting.
+	    memcpy_pgdir(e->env_pgdir, va, binary + ph->p_offset, filesz);
+	    memset_pgdir(e->env_pgdir, va + filesz, memsz - filesz, 0);
+        if ((uint32_t)va == 0x800020) {
+        }
+	}
+	 */
+	// switch to work under user address mappings
+    lcr3(PADDR(e->env_pgdir));
+    for (; ph < phEnd; ++ph) {
+        if (ph->p_type != ELF_PROG_LOAD) {
+            // does not load this type according to Hints
+            continue;
+        }
+        // read information on mapping
+        if (ph->p_memsz < ph->p_filesz) {
+            panic("ELF size in memory less than size in file...\n");
+        }
+        // allocate space before copying
+        region_alloc(e, (void *)ph->p_va, ph->p_memsz);
+        // make mappings
+        // copy to virtual address
+        memcpy((void *)ph->p_va, binary + ph->p_offset, ph->p_filesz);
+        // set the rest to 0s according to Hints
+        memset((void *)(ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
+        //memset((void *)ph->p_va, 0, ph->p_memsz);
+        //memcpy((void *)ph->p_va, binary + ph->p_offset, ph->p_filesz);
+    }
+    // switch back to kernel address mappings
+    lcr3(PADDR(kern_pgdir));
+    // set runnable status
+    e->env_status = ENV_RUNNABLE;
+	// set entry in trap frame
+	// other parts of env_tf is set in function env_alloc
+	e->env_tf.tf_eip = elfHeader->e_entry;
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 
 	// LAB 3: Your code here.
+	// allocate a page for user stack
+	// page_insert(e->env_pgdir, page_alloc(ALLOC_ZERO), (void *)(USTACKTOP - PGSIZE), PGSIZE);
+	region_alloc(e, (void *)(USTACKTOP - PGSIZE), PGSIZE);
 }
 
 //
@@ -354,8 +532,16 @@ env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
 
-	// If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
-	// LAB 5: Your code here.
+	// allocate an Env
+	struct Env *env;
+	env_alloc(&env, 0);
+	load_icode(env, binary);
+	env->env_type = type;
+
+    // If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
+    // LAB 5: Your code here.
+
+
 }
 
 //
@@ -405,7 +591,7 @@ env_free(struct Env *e)
 	e->env_pgdir = 0;
 	page_decref(pa2page(pa));
 
-	// return the environment to the free list
+    // return the environment to the free list
 	e->env_status = ENV_FREE;
 	e->env_link = env_free_list;
 	env_free_list = e;
@@ -441,9 +627,9 @@ env_destroy(struct Env *e)
 // This exits the kernel and starts executing some environment's code.
 //
 // This function does not return.
-//
+
 void
-env_pop_tf(struct Trapframe *tf)
+env_pop_tf(struct Trapframe *tf/*, pde_t *env_pgdir*/)
 {
 	// Record the CPU we are running on for user-space debugging
 	curenv->env_cpunum = cpunum();
@@ -486,7 +672,32 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-
-	panic("env_run not yet implemented");
+	// panic("env_run not yet implemented");
+	// Step 1
+	if (curenv) {
+	    if (curenv->env_status == ENV_RUNNING) {
+            curenv->env_status = ENV_RUNNABLE;
+        }
+	}
+    curenv = e;
+    curenv->env_status = ENV_RUNNING;
+	++curenv->env_runs;
+//	cprintf("[kernel] CPU %d running user envid %08x\n", thiscpu->cpu_id, curenv->env_id);
+	// change of page directory should be in env_pop_tf
+    lcr3(PADDR(curenv->env_pgdir));
+    // Step 2
+    /*
+      env_pop_tf does the following things:
+       - set stack pointer to input struct TrapFrame pointer.
+       - try to load all registers from stack by popping.
+       - pop new stack pointer from stack.
+       - pop new ds pointer from stack.
+       - skip trap number & error code.
+       - trigger interrupt.
+      The function come out into user space.
+     */
+    unlock_kernel();
+	// this call does not return
+	env_pop_tf(&curenv->env_tf);
 }
 

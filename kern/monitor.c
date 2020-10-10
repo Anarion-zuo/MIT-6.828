@@ -24,7 +24,11 @@ struct Command {
 
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
-	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+    { "kerninfo", "Display information about the kernel", mon_kerninfo },
+    { "backtrace", "Trace back call stack", mon_backtrace },
+    { "quit", "Exit kernel debug shell", mon_quitdebug },
+    { "printtrap", "Print current TrapFrame", mon_printtrap },
+    { "tracetrap", "Print trace of current Breakpoint", mon_trapcurtrace },
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -55,14 +59,85 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+static int
+print_curtrace(uint32_t ebp, uint32_t eip) {
+    cprintf("ebp %x, eip %x\n", ebp, eip);
+    struct Eipdebuginfo info;
+    int ret = debuginfo_eip(eip, &info);
+    cprintf("    %s: %d: %.*s+%d\n",
+            info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name, eip - info.eip_fn_addr);
+    return ret;
+}
+
+int
+print_backtrace(uint32_t ebp) {
+    int *ebp_base_ptr = (int *)ebp;           // extract stack base
+    uint32_t eip = ebp_base_ptr[1];   // extract just above this stack
+    while (1) {
+        /*
+        cprintf("ebp %x, eip %x\n", ebp, eip);
+
+//        int *args = ebp_base_ptr + 2;
+
+//        for (int i = 0; i < 5; ++i) {
+//            cprintf("%x ", args[i]);
+//        }
+//        cprintf("\n");
+
+        struct Eipdebuginfo info;
+        int ret = debuginfo_eip(eip, &info);
+        if (ret) {
+            break;
+        }
+        cprintf("    %s: %d: %.*s+%d\n",
+                info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name, eip - info.eip_fn_addr);
+    */
+        if (print_curtrace(ebp, eip)) {
+            break;
+        }
+        ebp = *ebp_base_ptr;
+        ebp_base_ptr = (int *) ebp;
+        eip = ebp_base_ptr[1];
+    }
+    return 0;
+}
+
+int mon_traptrace(int argc, char **argv, struct Trapframe *tf) {
+    uint32_t ebp = tf->tf_regs.reg_ebp;
+    return print_backtrace(ebp);
+}
+
+int mon_trapcurtrace(int arg, char **argv, struct Trapframe *tf) {
+    uint32_t ebp = tf->tf_regs.reg_ebp;
+    int *ebp_base_ptr = (int *)ebp;           // extract stack base
+    uint32_t eip = ebp_base_ptr[1];   // extract just above this stack
+    print_curtrace(ebp, eip);
+    return 0;
+}
+
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
+    typedef int (*this_func_type)(int, char **, struct Trapframe *);
 	// Your code here.
-	return 0;
+	return print_backtrace(read_ebp());
 }
 
+int
+mon_quitdebug(int argc, char **argv, struct Trapframe *tf) {
+    cprintf("quitting...\n");
+    return -1;
+}
 
+int
+mon_printtrap(int argc, char **argv, struct Trapframe *tf) {
+    if (tf == NULL) {
+        cprintf("Null TrapFrame... Nothing to print...\n");
+        return 0;
+    }
+    print_trapframe(tf);
+    return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 
@@ -109,20 +184,27 @@ runcmd(char *buf, struct Trapframe *tf)
 }
 
 void
+monitor_run(struct Trapframe *tf) {
+    char *buf;
+    while (1) {
+        buf = readline("K> ");
+        if (buf != NULL)
+            if (runcmd(buf, tf) < 0)
+                break;
+    }
+}
+
+void monitor_welcome() {
+    cprintf("Welcome to the JOS kernel monitor!\n");
+    cprintf("Type 'help' for a list of commands.\n");
+}
+
+void
 monitor(struct Trapframe *tf)
 {
-	char *buf;
-
-	cprintf("Welcome to the JOS kernel monitor!\n");
-	cprintf("Type 'help' for a list of commands.\n");
-
+	monitor_welcome();
 	if (tf != NULL)
 		print_trapframe(tf);
 
-	while (1) {
-		buf = readline("K> ");
-		if (buf != NULL)
-			if (runcmd(buf, tf) < 0)
-				break;
-	}
+	monitor_run(tf);
 }

@@ -43,6 +43,7 @@ i386_init(void)
 
 	// Acquire the big kernel lock before waking up APs
 	// Your code here:
+	lock_kernel();
 
 	// Starting non-boot CPUs
 	boot_aps();
@@ -56,6 +57,7 @@ i386_init(void)
 #else
 	// Touch all you want.
 	ENV_CREATE(user_icode, ENV_TYPE_USER);
+
 #endif // TEST*
 
 	// Should not be necessary - drains keyboard because interrupt has given up.
@@ -63,6 +65,12 @@ i386_init(void)
 
 	// Schedule and run the first user environment!
 	sched_yield();
+	// We only have one user environment for now, so just run it.
+	env_run(&envs[0]);
+
+	// Drop into the kernel monitor.
+	while (1)
+		monitor(NULL);
 }
 
 // While boot_aps is booting a given CPU, it communicates the per-core
@@ -115,9 +123,11 @@ mp_main(void)
 	// only one CPU can enter the scheduler at a time!
 	//
 	// Your code here:
+	lock_kernel();
+	sched_yield();
 
 	// Remove this after you finish Exercise 6
-	for (;;);
+	//for (;;);
 }
 
 /*
@@ -125,11 +135,14 @@ mp_main(void)
  * to indicate that the kernel has already called panic.
  */
 const char *panicstr;
+extern void lock_print();
+extern void unlock_print();
 
 /*
  * Panic is called on unresolvable fatal errors.
  * It prints "panic: mesg", and then enters the kernel monitor.
  */
+extern int print_backtrace(uint32_t ebp);
 void
 _panic(const char *file, int line, const char *fmt,...)
 {
@@ -144,9 +157,12 @@ _panic(const char *file, int line, const char *fmt,...)
 
 	va_start(ap, fmt);
 	cprintf("kernel panic on CPU %d at %s:%d: ", cpunum(), file, line);
+	lock_print();
 	vcprintf(fmt, ap);
+	unlock_print();
 	cprintf("\n");
 	va_end(ap);
+    print_backtrace(read_ebp());
 
 dead:
 	/* break into the kernel monitor */

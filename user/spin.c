@@ -15,7 +15,7 @@ umain(int argc, char **argv)
 			/* do nothing */;
 	}
 
-	cprintf("I am the parent.  Running the child...\n");
+	cprintf("I am the parent.  Running the child envid %08x...\n", env);
 	sys_yield();
 	sys_yield();
 	sys_yield();
@@ -27,5 +27,6 @@ umain(int argc, char **argv)
 
 	cprintf("I am the parent.  Killing the child...\n");
 	sys_env_destroy(env);
+	cprintf("I am the parent.  The child is killed...\n");
 }
 
