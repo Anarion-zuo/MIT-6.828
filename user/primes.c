@@ -43,6 +43,7 @@ umain(int argc, char **argv)
 	// fork the first prime process in the chain
 	if ((id = fork()) < 0)
 		panic("fork: %e", id);
+	cprintf("My thisenv address 0x%lx\n", thisenv);
 	if (id == 0)
 		primeproc();
 
